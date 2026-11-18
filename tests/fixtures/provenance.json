@@ -1,0 +1,9 @@
+{
+  "source_file_sha256": "8c4ff201437906677c18ae28e3976f3230eb8f631a4e61bfee349db3ffd4a246",
+  "rows": 1390,
+  "columns": [
+    "margin",
+    "vote"
+  ],
+  "transformation": "Stata to CSV; columns selected; values unchanged"
+}

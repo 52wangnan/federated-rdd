@@ -24,6 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from reporting import save_table  # noqa: E402
+import figstyle  # noqa: E402
 
 RES = {2018: os.path.join(ROOT, 'results', 'charls'), 2015: os.path.join(ROOT, 'results', 'charls_2015')}
 TAB = os.path.join(ROOT, 'output', 'tables')
@@ -119,8 +120,8 @@ def main():
 
 
 def figure(fr):
-    plt.rcParams.update({'font.size': 9, 'axes.spines.top': False, 'axes.spines.right': False})
-    fig, axs = plt.subplots(1, 2, figsize=(11, 3.2), sharey=False)
+    figstyle.setup()
+    fig, axs = plt.subplots(1, 2, figsize=(figstyle.width('fig_charls_density_2015_vs_2018'), 3.4), sharey=False)
     for ax, w in zip(axs, WAVES):
         db = pd.read_csv(os.path.join(RES[w], 'density_bins.csv'))
         dt = pd.read_csv(os.path.join(RES[w], 'density_test.csv'))
@@ -135,8 +136,8 @@ def figure(fr):
         ax.set_xlabel('age at interview (years, monthly bins)')
         ax.set_ylabel('respondents')
         ptxt = 'p < 0.001' if r['p'] < 0.001 else f"p = {r['p']:.3f}"
-        ax.set_title(f"CHARLS {w}: theta = {r['theta']:.3f} (SE {r['se']:.3f}), {ptxt}, h = {r['h']:.1f}", fontsize=8)
-        ax.legend(frameon=False, fontsize=7, loc='upper right')
+        ax.set_title(figstyle.wrap(f"CHARLS {w}: theta = {r['theta']:.3f} (SE {r['se']:.3f}), {ptxt}, h = {r['h']:.1f}", 40))
+        ax.legend(frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.26))
     fig.tight_layout()
     fig.savefig(os.path.join(FIG, 'fig_charls_density_2015_vs_2018.png'), dpi=300, bbox_inches='tight')
     fig.savefig(os.path.join(FIG, 'fig_charls_density_2015_vs_2018.pdf'), bbox_inches='tight')

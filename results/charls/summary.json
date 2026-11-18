@@ -1,0 +1,140 @@
+{
+ "N_cohort": 11455,
+ "sites": "7 geographic regions",
+ "covariates": [
+  "female",
+  "han",
+  "edu_below_primary",
+  "edu_primary",
+  "edu_middle_plus",
+  "married"
+ ],
+ "ik_info_srh": {
+  "N": 10689.0,
+  "h1": 2.699949497622055,
+  "f": 0.030717510972659675,
+  "s2_minus": 0.9940653881121627,
+  "s2_plus": 0.9559203506097553,
+  "n_h1": [
+   748.0,
+   1025.0
+  ],
+  "med": [
+   -6.313004032258065,
+   7.649739583333333
+  ],
+  "m3": -0.0012334845554318585,
+  "h2_minus": 11.91997564706649,
+  "h2_plus": 11.330932234274284,
+  "m2_minus": -0.003140491116905376,
+  "m2_plus": 0.002718629758865527,
+  "n_h2": [
+   4112.0,
+   4255.0
+  ],
+  "r_minus": 2.5865097820495977e-05,
+  "r_plus": 2.9438340567811946e-05,
+  "C_K": 3.4375,
+  "h": 7.952268654141206
+ },
+ "main_srh_good_itt": {
+  "tau_cl": 0.01926085780342157,
+  "se_cl": 0.036570461771057904,
+  "tau_bc": 0.02223881517282833,
+  "se_rb": 0.044100339080215455,
+  "ci_rb": [
+   -0.06419626113039821,
+   0.10867389147605487
+  ],
+  "h": 4.711266715709987,
+  "b": 7.124452524475864,
+  "n_h": [
+   1531,
+   1909
+  ]
+ },
+ "comm_main": {
+  "rounds": 10,
+  "bytes_up_per_site": 11072.0,
+  "bytes_up_per_site_mean": 11072.0,
+  "bytes_up_total": 77504.0,
+  "bytes_down_total": 59696.0,
+  "t_local": 0.03750049998052418,
+  "t_net": 0.0
+ },
+ "comm_rounds_main": [
+  {
+   "round": 1,
+   "name": "cct:describe",
+   "floats_up_per_site": 7,
+   "floats_down": 0
+  },
+  {
+   "round": 2,
+   "name": "cct:grid",
+   "floats_up_per_site": 901,
+   "floats_down": 902
+  },
+  {
+   "round": 3,
+   "name": "cct:gram-pilot",
+   "floats_up_per_site": 164,
+   "floats_down": 8
+  },
+  {
+   "round": 4,
+   "name": "cct:meat-pilot",
+   "floats_up_per_site": 82,
+   "floats_down": 54
+  },
+  {
+   "round": 5,
+   "name": "cct:gram-b",
+   "floats_up_per_site": 58,
+   "floats_down": 4
+  },
+  {
+   "round": 6,
+   "name": "cct:meat-b",
+   "floats_up_per_site": 42,
+   "floats_down": 20
+  },
+  {
+   "round": 7,
+   "name": "cct:gram-h",
+   "floats_up_per_site": 38,
+   "floats_down": 4
+  },
+  {
+   "round": 8,
+   "name": "cct:meat-h",
+   "floats_up_per_site": 26,
+   "floats_down": 18
+  },
+  {
+   "round": 9,
+   "name": "est:gram",
+   "floats_up_per_site": 38,
+   "floats_down": 4
+  },
+  {
+   "round": 10,
+   "name": "est:meat",
+   "floats_up_per_site": 28,
+   "floats_down": 52
+  }
+ ],
+ "microdata_bytes_total": 171024.0,
+ "density": {
+  "h_factor": 1.0,
+  "h": 6.395954028902629,
+  "theta": 0.30137685868043285,
+  "se": 0.07051901621023743,
+  "z": 4.273696300327587,
+  "p": 1.9225886566879565e-05,
+  "f_minus": 0.02292067363920846,
+  "f_plus": 0.03098230208530816,
+  "N": 11455,
+  "rounds": 1
+ }
+}

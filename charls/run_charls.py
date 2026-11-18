@@ -52,7 +52,7 @@ WAVE = 2018
 SEED = 20261011
 COVS = ['female', 'han', 'edu_below_primary', 'edu_primary', 'edu_middle_plus', 'married']
 OUTCOMES = {'srh_good': 'Self-rated health fair or better (0/1)',
-            'srh': 'Self-rated health, 1 very good - 5 very poor',
+            'srh': 'Self-rated health, 1 very good - 5 very poor (primary outcome)',
             'cesd10': 'CES-D 10 depressive symptoms (0-30)',
             'adl_any': 'Any basic ADL difficulty (0/1)'}
 BALANCE = COVS + ['lunar_birthday', 'n_chronic', 'chr_hypertension', 'chr_diabetes', 'chr_arthritis']
@@ -259,7 +259,7 @@ def main():
             rows.append(dict(outcome=y, design='FRD' if fuzzy else 'ITT', site='Cochran Q', kind='heterogeneity', tau_cl=Q,
                              se_cl=dfq, tau_bc=float(chi2.sf(Q, dfq)), se_rb=max(0.0, (Q - dfq) / Q) if Q > 0 else 0.0, ok=True))
     pd.DataFrame(rows).to_csv(os.path.join(OUT, 'site_estimates_region.csv'), index=False)
-    # ------------------------------------------------------------------ random partitions
+    # ------------------------------------------------------------------ random partitions of the same records
     rows = []
     for y in ('srh_good', 'srh'):
         d = df.dropna(subset=['x', y]).reset_index(drop=True)

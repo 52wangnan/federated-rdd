@@ -5,7 +5,8 @@
 
     python simulation/make_sim_tables.py  -> results/sim/sim_summary.csv, output/tables/*, output/figures/*
 
-Monte Carlo standard errors: bias sd/sqrt(R); SD sd/sqrt(2(R-1)); RMSE  sd((t-tau)^2)/(2 RMSE sqrt(R));
+Monte Carlo standard errors: bias sd/sqrt(R); SD uses the empirical fourth-moment delta method;
+RMSE sd((t-tau)^2)/(2 RMSE sqrt(R));
 coverage sqrt(c(1-c)/R); CI length sd(len)/sqrt(R).  Estimates are never rescaled or shifted.
 """
 import os
@@ -22,6 +23,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from reporting import save_table, pm  # noqa: E402
+import figstyle  # noqa: E402
 
 RES = os.path.join(ROOT, 'results')
 TAB = os.path.join(ROOT, 'output', 'tables')
@@ -42,8 +44,8 @@ EST = {
     'Federated + site FE, conventional': ('fe_tau_cl', 'fe_se_cl'),
     'Federated + site FE, robust BC': ('fe_tau_bc', 'fe_se_rb'),
 }
-DESIGN_LABEL = {'S1': 'S1: linear, no covariates',
-                'S2': 'S2: linear, p = 10 covariates, variance heterogeneity lambda',
+DESIGN_LABEL = {'S1': 'S1 (Table 2): linear, no covariates',
+                'S2': 'S2 (Table 4): linear, p = 10 covariates, variance heterogeneity lambda',
                 'S3': 'S3: site-specific effects, unequal sites, target tau_pool',
                 'S4': 'S4: Lee (2008) curvature design',
                 'S5': 'S5: quadratic curvature',
@@ -53,6 +55,9 @@ DESIGN_LABEL = {'S1': 'S1: linear, no covariates',
 def metrics(t, se, tau):
     ok = np.isfinite(t) & np.isfinite(se)
     t, se = t[ok], se[ok]
+    tau = np.asarray(tau)
+    if tau.ndim:
+        tau = tau[ok]
     R = len(t)
     if R < 2:
         return dict(R=R)
@@ -62,7 +67,10 @@ def metrics(t, se, tau):
     rmse = np.sqrt(mse)
     cov = np.abs(e) <= Z * se
     ln = 2 * Z * se
-    return dict(R=R, bias=e.mean(), bias_mcse=sd / np.sqrt(R), sd=sd, sd_mcse=sd / np.sqrt(2 * (R - 1)),
+    # Empirical influence values of the sample SD; requires a finite fourth moment.
+    # Keep all replications. Heavy tails can make this MCSE itself imprecise.
+    sd_mcse = np.std((t-t.mean())**2, ddof=1) / (2*sd*np.sqrt(R)) if sd > 0 else 0.0
+    return dict(R=R, bias=e.mean(), bias_mcse=sd / np.sqrt(R), sd=sd, sd_mcse=sd_mcse,
                 rmse=rmse, rmse_mcse=np.std(e ** 2, ddof=1) / (2 * rmse * np.sqrt(R)),
                 coverage=cov.mean(), coverage_mcse=np.sqrt(cov.mean() * (1 - cov.mean()) / R),
                 ci_length=ln.mean(), ci_length_mcse=ln.std(ddof=1) / np.sqrt(R))
@@ -168,7 +176,7 @@ def comm_tables():
 
 def figures(raw, s):
     os.makedirs(FIG, exist_ok=True)
-    plt.rcParams.update({'font.size': 9, 'axes.spines.top': False, 'axes.spines.right': False})
+    figstyle.setup()
     col = {'Federated (= pooled), conventional': '#1f77b4', 'Federated (= pooled), robust BC': '#08306b',
            'IVW meta-analysis, conventional': '#e6550d', 'IVW meta-analysis, robust BC': '#a63603',
            'Simple average, conventional': '#74c476', 'Simple average, robust BC': '#006d2c',
@@ -176,8 +184,8 @@ def figures(raw, s):
     ls = lambda e: '--' if 'conventional' in e else '-'
     # coverage
     designs = [('S1', 0.0), ('S2', 0.4), ('S3', 0.0), ('S4', 0.0), ('S5', 0.0), ('S6', 0.0)]
-    fig, axs = plt.subplots(1, len(designs), figsize=(15.5, 3.2), sharey=True)
-    for ax, (dsg, lam) in zip(axs, designs):
+    fig, axs = plt.subplots(2, 3, figsize=(figstyle.width('fig_sim_coverage'), 5.4), sharey=True, layout='constrained')
+    for ax, (dsg, lam) in zip(axs.flat, designs):
         d = s[(s.design == dsg) & (s.lam == lam)]
         for e, c_ in col.items():
             g = d[d.estimator == e].sort_values('K')
@@ -190,17 +198,20 @@ def figures(raw, s):
         ax.set_xticklabels(['5', '10', '20', '40'])
         ax.set_title(dsg + (f' (λ = {lam})' if dsg == 'S2' else ''))
         ax.set_xlabel('number of sites K')
-    axs[0].set_ylabel('coverage of nominal 95% CI')
-    axs[0].set_ylim(0, 1.02)
-    handles, labels = axs[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.12))
-    fig.tight_layout()
+    fig.supylabel('coverage of nominal 95% CI')
+    axs[0, 0].set_ylim(0, 1.02)
+    # one legend for all panels (the site-FE estimator appears only in S6)
+    leg = {}
+    for ax in axs.flat:
+        for h_, l_ in zip(*ax.get_legend_handles_labels()):
+            leg.setdefault(l_, h_)
+    fig.legend(list(leg.values()), list(leg), loc='outside lower center', ncol=2, frameon=False)
     fig.savefig(os.path.join(FIG, 'fig_sim_coverage.png'), dpi=300, bbox_inches='tight')
     fig.savefig(os.path.join(FIG, 'fig_sim_coverage.pdf'), bbox_inches='tight')
     plt.close(fig)
     # RMSE
-    fig, axs = plt.subplots(1, len(designs), figsize=(15.5, 3.2))
-    for ax, (dsg, lam) in zip(axs, designs):
+    fig, axs = plt.subplots(2, 3, figsize=(figstyle.width('fig_sim_rmse'), 5.1), layout='constrained')
+    for ax, (dsg, lam) in zip(axs.flat, designs):
         d = s[(s.design == dsg) & (s.lam == lam)]
         for e in ('Federated (= pooled), robust BC', 'IVW meta-analysis, robust BC', 'Simple average, robust BC',
                   'Federated (= pooled), conventional', 'Federated + site FE, robust BC'):
@@ -213,19 +224,19 @@ def figures(raw, s):
         ax.set_title(dsg + (f' (λ = {lam})' if dsg == 'S2' else ''))
         ax.set_xlabel('number of sites K')
         ax.set_ylim(bottom=0)
-    axs[0].set_ylabel('RMSE')
-    handles, labels = axs[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.1))
-    fig.tight_layout()
+    for ax in axs[:, 0]:
+        ax.set_ylabel('RMSE')
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='outside lower center', ncol=2, frameon=False)
     fig.savefig(os.path.join(FIG, 'fig_sim_rmse.png'), dpi=300, bbox_inches='tight')
     fig.savefig(os.path.join(FIG, 'fig_sim_rmse.pdf'), bbox_inches='tight')
     plt.close(fig)
     # S3 estimand: distribution of estimates around tau_pool
     d = raw[raw.design == 'S3']
-    fig, axs = plt.subplots(1, 4, figsize=(12, 3), sharey=True)
+    fig, axs = plt.subplots(2, 2, figsize=(figstyle.width('fig_sim_S3_estimand'), 4.4), sharey=True)
     sys.path.insert(0, HERE)
     import dgp
-    for ax, K in zip(axs, sorted(d.K.unique())):
+    for ax, K in zip(axs.flat, sorted(d.K.unique())):
         g = d[d.K == K]
         tp, tm, _ = dgp.s3_truth(int(K))
         data = [g['fed_tau_bc'].dropna(), g['ivw_rb_tau'].dropna(), g['mean_rb_tau'].dropna()]
@@ -235,15 +246,16 @@ def figures(raw, s):
         ax.axhline(tp, color='k', lw=1, label=r'$\tau_{\mathrm{ITT}}$ (pooled effect)')
         ax.axhline(tm, color='grey', lw=1, ls=':', label='mean of site effects')
         ax.set_title(f'S3, K = {K}')
-    axs[0].set_ylabel('estimate (robust BC)')
-    axs[0].legend(frameon=False, fontsize=7)
+    for ax in axs[:, 0]:
+        ax.set_ylabel('estimate (robust BC)')
+    axs[0, 0].legend(frameon=False)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG, 'fig_sim_S3_estimand.png'), dpi=300, bbox_inches='tight')
     fig.savefig(os.path.join(FIG, 'fig_sim_S3_estimand.pdf'), bbox_inches='tight')
     plt.close(fig)
     # exactness: federated vs pooled over all replications
     v = raw['maxdiff_fed_cen'].to_numpy()
-    fig, ax = plt.subplots(figsize=(4.5, 3))
+    fig, ax = plt.subplots(figsize=(figstyle.width('fig_sim_exactness'), 2.6))
     lv = np.log10(np.maximum(v, 1e-17))
     ax.hist(lv, bins=40, color='#08306b')
     ax.axvline(-10, color='red', lw=1, ls='--', label='tolerance 1e-10')
@@ -259,7 +271,7 @@ def figures(raw, s):
     if os.path.exists(p):
         c = pd.read_csv(p)
         from matplotlib.lines import Line2D
-        fig, axs = plt.subplots(1, 2, figsize=(9, 3.6))
+        fig, axs = plt.subplots(1, 2, figsize=(figstyle.width('fig_comm'), 4.0))
         ps = sorted(c['p'].unique())
         colors = {pp: plt.cm.viridis(i / max(1, len(ps))) for i, pp in enumerate(ps)}
         for pp, g in c.groupby('p'):
@@ -279,17 +291,17 @@ def figures(raw, s):
         axs[0].set_yscale('log')
         axs[0].set_ylabel('upload per site (KiB)')
         axs[1].set_ylabel('wall-clock time (s)')
-        axs[0].set_title('upload per site', fontsize=9)
-        axs[1].set_title('time per analysis', fontsize=9)
+        axs[0].set_title('upload per site')
+        axs[1].set_title('time per analysis')
         # legends below the panels: colour = number of covariates p, line style = quantity
         col_h = [Line2D([], [], color=colors[pp], lw=2) for pp in ps]
         axs[0].legend(col_h + [Line2D([], [], color='k', marker='o', ms=4), Line2D([], [], color='k', marker='x', ms=4, ls=':')],
                       [f'p = {pp} covariates' for pp in ps] + ['federated protocol', 'uploading the raw records'],
-                      frameon=False, fontsize=7, ncol=3, loc='upper center', bbox_to_anchor=(0.5, -0.2))
+                      frameon=False, ncol=1, loc='upper center', bbox_to_anchor=(0.5, -0.22))
         axs[1].legend([Line2D([], [], color='k', marker='o', ms=4), Line2D([], [], color='k', marker='s', ms=3, ls='--'),
                        Line2D([], [], color='k', marker='x', ms=4, ls=':')],
-                      ['federated, sites in parallel + 50 ms per round', 'federated, all sites computed serially', 'pooled data'],
-                      frameon=False, fontsize=7, ncol=1, loc='upper center', bbox_to_anchor=(0.5, -0.2))
+                      ['federated, sites in parallel\n+ 50 ms per round', 'federated, all sites\ncomputed serially', 'pooled data'],
+                      frameon=False, ncol=1, loc='upper center', bbox_to_anchor=(0.5, -0.22))
         fig.tight_layout()
         fig.savefig(os.path.join(FIG, 'fig_comm.png'), dpi=300, bbox_inches='tight')
         fig.savefig(os.path.join(FIG, 'fig_comm.pdf'), bbox_inches='tight')

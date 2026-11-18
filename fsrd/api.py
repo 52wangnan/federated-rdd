@@ -128,10 +128,10 @@ def site_estimates(sites, **kw):
         try:
             r = fsrd([s], **kw)
             rows.append(dict(site=k, ok=True, n=s.n, n_h=sum(r['n_h']), h=r['h'], tau_cl=r['tau_cl'], se_cl=r['se_cl'],
-                             tau_bc=r['tau_bc'], se_rb=r['se_rb']))
-        except (np.linalg.LinAlgError, ValueError, ZeroDivisionError, FloatingPointError):
+                             tau_bc=r['tau_bc'], se_rb=r['se_rb'], failure_reason='', **r['fit_diagnostics']))
+        except (np.linalg.LinAlgError, ValueError, ZeroDivisionError, FloatingPointError) as e:
             rows.append(dict(site=k, ok=False, n=s.n, n_h=np.nan, h=np.nan, tau_cl=np.nan, se_cl=np.nan,
-                             tau_bc=np.nan, se_rb=np.nan))
+                             tau_bc=np.nan, se_rb=np.nan, failure_reason=type(e).__name__ + ': ' + str(e)))
     return rows
 
 

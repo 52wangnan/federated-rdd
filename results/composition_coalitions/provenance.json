@@ -1,0 +1,13 @@
+{
+  "seed": 20261011,
+  "reps": 500,
+  "s6_seed": "[20261011,6,K,0,rep]",
+  "coalitions": "complete enumeration; no random seed used",
+  "wave": 2018,
+  "outcome": "srh (1=very good,5=very poor)",
+  "bandwidth": "IK, b=h; HC1",
+  "sources": {
+    "results\\sim\\sim_raw.csv": "cdc5a79616789c6a655ce7afb8ccb652d0022b1b8803c41a79c12a51214553d8",
+    "data\\charls2018_rd.csv": "fc6a8432972607837954101abbe3f6f578963d162ad7ca6d78e1dc61b1a31a70"
+  }
+}

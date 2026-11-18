@@ -100,11 +100,14 @@ def one(design, K, lam, rep):
         row['maxdiff_fe_cen'] = max(abs(fe[k] - cfe[k]) for k in CMP)
     rows = site_estimates(sites, covs=covs, **sup)
     row['site_fail'] = int(sum(not r['ok'] for r in rows))
+    for reason in ('saturated_joint_design', 'unidentified_rd_contrast'):
+        row['site_fail_' + reason] = sum(reason in r['failure_reason'] for r in rows)
     for kind in ('cl', 'rb'):
         for name, fn in (('ivw', meta_ivw), ('mean', meta_mean)):
             m = fn(rows, kind)
             row[f'{name}_{kind}_tau'] = m['tau']
             row[f'{name}_{kind}_se'] = m['se']
+            row[f'{name}_{kind}_k_used'] = m['k_used']
     return row
 
 

@@ -40,15 +40,18 @@ federated-rdd/
 │  ├─ kernels.py          核函数与边界核常数
 │  └─ reference.py        仅供测试：rdrobust 估计步骤的观测级逐行转写，作为独立对照
 ├─ examples/quickstart.py 模拟数据上的最小示例
-├─ tests/                 单元测试（test_fsrd.py）与无需 pytest 的运行器（run_tests.py）
+├─ tests/                 单元测试（test_fsrd.py、test_fit_validity.py）、运行器 run_tests.py、公开示例数据 fixtures/
 ├─ simulation/            蒙特卡洛仿真：数据生成（dgp.py）、仿真、通信基准、表图
 ├─ charls/                CHARLS 实证案例：数据构建、分析、合作价值分析、多重检验、表图
+├─ paper/                 论文中各表、图的生成脚本（IK 带宽主分析、扩展设计、通信、小单元规则、作图）
+├─ results/               论文报告的汇总结果（CSV、图），不含任何个体记录
+├─ figstyle.py            作图样式
 ├─ reporting.py           表格输出（CSV / Markdown / LaTeX）
 ├─ run_all.py             一键运行
 └─ requirements.txt
 ```
 
-运行后会生成 `data/`、`results/`、`output/`，均已在 `.gitignore` 中排除。
+`data/`（由 CHARLS 原始数据构建的分析文件）和 `output/` 由脚本生成，已在 `.gitignore` 中排除；`results/` 保存论文报告的汇总结果（不含任何个体记录），随仓库提供。
 
 ## 环境
 
@@ -96,7 +99,7 @@ python tests/run_tests.py
 
 测试覆盖：无噪声数据上精确还原真值；联邦与集中式逐位相同（精确/模糊 RD、有无协变量、各种方差选项、随机切分站点）；与 rdrobust 观测级转写及官方 `rdrobust` 2.1.1 一致（给定带宽时差 < 1e-10，mserd 带宽相对差 < 1e-8）；IK 带宽公式；密度检验；站点固定效应；通信量与站点样本量无关。
 
-`test_c_published_rdrobust_senate_example` 需要 rdrobust 自带的参议院示例数据 `rdrobust_senate.dta`（可从 rdrobust 的官方仓库获取），放到 `tests/data/` 或用环境变量 `RDROBUST_SENATE_DTA` 指定路径；没有这个文件时自动跳过。
+`test_c_published_rdrobust_senate_example` 使用 rdrobust 自带的参议院示例数据（公开数据，已放在 `tests/fixtures/rdrobust_senate.csv`）；`test_c_rdrobust_python_package` 在安装了官方 `rdrobust` 包时运行，否则跳过。
 
 ## 仿真
 
@@ -131,6 +134,42 @@ python run_all.py --raw /path/to/CHARLS     # 完整运行
 python run_all.py --quick --skip-charls     # 冒烟检查：每个仿真配置 40 次重复
 ```
 
+## Reproducing the paper
+
+This repository accompanies the paper *Federated Sharp Regression Discontinuity: Privacy-Preserving Causal Inference
+Across Data Islands* (N. Wang, Y. Liu, E. Hassini, H. Chen). The library in `fsrd/` implements the procedure; `simulation/`,
+`charls/` and `paper/` produce every reported number, and `results/` holds the aggregate outputs behind the tables and
+figures. No CHARLS individual record is included (see the data section above).
+
+```bash
+pip install -r requirements.txt
+python tests/run_tests.py                 # unit tests (federated = pooled, agreement with rdrobust, IK formula, ...)
+python run_all.py --paper --tables-only   # redraw the paper's displays from results/ (no CHARLS data needed)
+python run_all.py --raw /path/to/CHARLS   # full run: simulations, CHARLS extraction and analyses
+python run_all.py --paper                 # then the IK analyses reported in the paper
+```
+
+| Display | Script | Stored result |
+|---|---|---|
+| Figure 1 | protocol diagram drawn by the authors | – |
+| Tables 2 and 4 (designs S1, S2) | `simulation/run_simulation.py`, `paper/local_ik_benchmarks.py` | `results/sim/sim_raw.csv`, `results/ik_benchmarks/local_ik_s1s2_summary.csv` |
+| Table 3 | configurations of design S2 (no data) | – |
+| Table 5 (curvature, K = 10) | `paper/extensions_s3_curvature.py` | `results/extensions/curvature_summary.csv` |
+| Table 6 (communication and run time) | `paper/comm_ik.py` | `results/ik_benchmarks/comm_ik.csv` |
+| Table 7 (design S3) | `paper/extensions_s3_curvature.py` | `results/extensions/s3_manuscript_table.csv` |
+| Table 8 (design S6) | `paper/composition_coalitions.py` | `results/composition_coalitions/s6_manuscript_table.csv` |
+| Table 9 (CHARLS 2018) | `paper/charls_ik_analysis.py` | `results/charls_ik/charls_main.csv`, `results/charls_ik/regions.csv` |
+| Figures 2–4 (partitions across sites) | `paper/charls_ik_analysis.py`, `paper/figures_vector.py` | `results/charls_ik/partitions.csv`, `results/figures_vector/` |
+| Figure 5 (coalitions of regions) | `paper/composition_coalitions.py`, `paper/figures_charls.py`, `paper/figures_vector.py` | `results/composition_coalitions/coalitions_ik.csv`, `coalition_fit.csv` |
+| Supplementary Figure C.1 | `paper/extensions_s3_curvature.py` | `results/extensions/curvature_coverage.png` |
+| Supplementary Tables C.1–C.8 (CHARLS specifications and diagnostics, 2015 and 2018) | `charls/run_charls.py`, `charls/make_charls_tables.py`, `charls/compare_waves.py` | `results/charls/`, `results/charls_2015/` |
+| Supplementary Table C.9 (small-cell rule) | `paper/smallcell_rule.py` | `results/ik_benchmarks/smallcell_srh_2018.csv` |
+| Supplementary Figure C.2 | `paper/figures_charls.py` | `results/ik_benchmarks/fig_charls_rdplot_srh.png` |
+| Supplementary Figures C.3–C.4 | `paper/figures_bandwidth.py` | `results/figures_bandwidth/` |
+
+Simulation seeds are derived from 20261011 and the configuration identifiers; `REPLICATION_MANIFEST.json` lists the
+SHA-256 of every file in the repository.
+
 ## 局限
 
 - rdrobust 默认的最近邻方差（`vce='nn'`）需要跨站点找近邻，无法联邦计算，本库只提供 HC 和聚类方差。
@@ -139,7 +178,7 @@ python run_all.py --quick --skip-charls     # 冒烟检查：每个仿真配置 
 
 ## 作者
 
-王楠（Nan Wang），大连理工大学。相关论文为合作研究，正在准备中，正式发表后补充引用信息。
+王楠（Nan Wang），大连理工大学。相关论文：Wang, N., Liu, Y., Hassini, E., Chen, H. *Federated Sharp Regression Discontinuity: Privacy-Preserving Causal Inference Across Data Islands*（工作论文，正式发表后补充引用信息）。
 
 ## 许可证
 

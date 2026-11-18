@@ -1,0 +1,11 @@
+round,name,floats_up_per_site,floats_down,bytes_up_per_site
+1,cct:describe,7,0,56
+2,cct:hist,256,258,2048
+3,cct:gram-pilot,824,8,6592
+4,cct:meat-pilot,82,114,656
+5,cct:gram-b,218,4,1744
+6,cct:meat-b,42,40,336
+7,cct:gram-h,158,4,1264
+8,cct:meat-h,26,38,208
+9,est:gram,418,4,3344
+10,est:meat,28,92,224

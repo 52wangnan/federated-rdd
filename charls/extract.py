@@ -2,7 +2,7 @@
 """Build the CHARLS 2018 (wave 4) analysis file from the raw .dta files.  No imputation: every
 variable keeps its observed value or is missing.
 
-    python charls/extract.py --raw /path/to/CHARLS
+    python charls/extract.py [--raw "data/raw"]
     -> data/charls2018_rd.csv          (one row per respondent in the analysis cohort)
        results/charls/extraction_log.json
 
@@ -18,7 +18,7 @@ earlier wave, zdiagnosed_*).
 Take-up D: currently receiving the urban-rural residents' pension (new rural / urban residents /
 integrated scheme): fn058_w4 == 1 and fn058_w4_b == 1 -> 1; fn058_w4 == 2 or fn058_w4_b == 2 -> 0.
 
-Outcomes: srh (da002, 1 very good ... 5 very poor), srh_good = 1{srh <= 3}
+Outcomes: srh (da002, 1 very good ... 5 very poor; the primary outcome), srh_good = 1{srh <= 3}
 (fair or better), cesd10 (0-30, items dc009-dc018, dc013 and dc016 reversed, all ten items required),
 adl_any = any difficulty with the six basic ADLs (db010-db015, all six required); defined only for respondents
 asked the ADL items (the questionnaire routes past them those with no difficulty on any of db001-db009).
@@ -61,7 +61,7 @@ def valid(s, lo, hi):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--raw', required=True, help='folder with the raw CHARLS files (obtain them from charls.pku.edu.cn)')
+    ap.add_argument('--raw', default='data/raw')
     a = ap.parse_args()
     log = {}
     DB = read(a.raw, 'Demographic_Background.dta',

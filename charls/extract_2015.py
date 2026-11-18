@@ -2,7 +2,7 @@
 """Build the CHARLS 2015 (wave 3) analysis file, mirroring charls/extract.py (2018).  No imputation:
 every variable keeps its observed value or is missing.
 
-    python charls/extract_2015.py --raw /path/to/CHARLS
+    python charls/extract_2015.py [--raw "data/raw"]
     -> data/charls2015_rd.csv              (one row per respondent in the analysis cohort)
        results/charls_2015/extraction_log.json
 
@@ -70,7 +70,7 @@ def read(raw, wave, f, cols):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--raw', required=True, help='folder with the raw CHARLS files (obtain them from charls.pku.edu.cn)')
+    ap.add_argument('--raw', default='data/raw')
     a = ap.parse_args()
     log = {}
     DB = read(a.raw, 2015, 'Demographic_Background.dta',

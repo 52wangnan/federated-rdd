@@ -20,6 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from reporting import save_table  # noqa: E402
+import figstyle  # noqa: E402
 
 RES = os.path.join(ROOT, 'results', 'charls')
 WAVE, SUF = 2018, ''
@@ -33,6 +34,8 @@ OUT_LABEL = {'srh_good': 'SRH fair or better (0/1)', 'srh': 'SRH 1-5 (higher = w
 # panel titles of the figures (the tables keep the short labels above)
 FIG_TITLE = {'srh_good': 'Self-rated health fair or better', 'srh': 'Self-rated health 1–5 (higher = worse)',
              'pension': 'Receipt of the pension', 'cesd10': 'CES-D 10 (0–30)', 'adl_any_all': 'Any ADL difficulty'}
+# the same titles over two lines for the narrow panels of the RD plot
+FIG_TITLE_2L = {'srh_good': 'Self-rated health\nfair or better', 'srh': 'Self-rated health 1–5\n(higher = worse)'}
 DESIGN_TITLE = {'ITT': 'ITT', 'FRD': 'fuzzy RD'}
 
 
@@ -76,7 +79,7 @@ def main():
     ap.add_argument('--wave', type=int, default=2018, choices=(2015, 2018))
     configure(ap.parse_args().wave)
     os.makedirs(FIG, exist_ok=True)
-    plt.rcParams.update({'font.size': 9, 'axes.spines.top': False, 'axes.spines.right': False})
+    figstyle.setup()
     m = pd.read_csv(os.path.join(RES, 'main_results.csv'))
     main_rows = m[(m.vce == 'hc1') & (m.bw == 'mserd')].copy()
     main_rows['outcome'] = main_rows['outcome'].map(OUT_LABEL)
@@ -166,7 +169,6 @@ def comm_table(summ):
     save(comm, 'table_charls_comm', digits=0, caption='Communication of the main CHARLS fit (7 sites, SRH fair or better, ITT)')
 
 
-
 def frd_fs(m, y):
     r = m[(m.outcome == y) & (m.design == 'first stage')]
     return float(r['tau_bc'].iloc[0])
@@ -176,7 +178,7 @@ def figures(m, bs, s):
     # RD plot
     bins = pd.read_csv(os.path.join(RES, 'rdplot_bins.csv'))
     fit = pd.read_csv(os.path.join(RES, 'rdplot_fit.csv'))
-    fig, axs = plt.subplots(1, 3, figsize=(12, 3.3))
+    fig, axs = plt.subplots(1, 3, figsize=(figstyle.width('fig_charls_rdplot'), 2.9), layout='constrained')
     for ax, v in zip(axs, ('srh_good', 'srh', 'pension')):
         g = bins[bins.variable == v]
         ax.scatter(g['x_mid'] + 60, g['mean'], s=np.clip(g['n'] / 8, 4, 40), color='#6baed6', edgecolor='none',
@@ -186,14 +188,13 @@ def figures(m, bs, s):
             ax.plot(f['x'] + 60, f['fit'], color='#08306b', lw=1.8, label='local linear fit within h' if side == '+' else None)
         ax.axvline(60, color='grey', lw=0.8, ls='--')
         ax.set_xlabel('age (years)')
-        ax.set_title(FIG_TITLE[v])
-    axs[0].legend(frameon=False, fontsize=7)
-    fig.tight_layout()
+        ax.set_title(FIG_TITLE_2L.get(v, FIG_TITLE[v]))
+    fig.legend(*axs[0].get_legend_handles_labels(), loc='outside lower center', ncol=2, frameon=False)
     savefig(fig, 'fig_charls_rdplot')
     plt.close(fig)
     # bandwidth sensitivity
-    fig, axs = plt.subplots(1, 4, figsize=(13, 3))
-    for ax, (y, dg) in zip(axs, [('srh_good', 'ITT'), ('srh_good', 'FRD'), ('srh', 'ITT'), ('srh', 'FRD')]):
+    fig, axs = plt.subplots(2, 2, figsize=(figstyle.width('fig_charls_bandwidth'), 4.6), layout='constrained')
+    for ax, (y, dg) in zip(axs.flat, [('srh_good', 'ITT'), ('srh_good', 'FRD'), ('srh', 'ITT'), ('srh', 'FRD')]):
         g = bs[(bs.outcome == y) & (bs.design == dg)].sort_values('factor')
         ax.errorbar(g['factor'], g['tau_bc'], yerr=[g['tau_bc'] - g['ci_rb_lo'], g['ci_rb_hi'] - g['tau_bc']], fmt='o',
                     color='#08306b', capsize=3, label='robust BC, 95% CI')
@@ -201,9 +202,8 @@ def figures(m, bs, s):
         ax.axhline(0, color='grey', lw=0.8)
         ax.set_xticks(g['factor'])
         ax.set_xlabel(r'$h\,/\,\hat{h}_{\mathrm{MSE}}$')
-        ax.set_title(f'{FIG_TITLE[y]}, {DESIGN_TITLE[dg]}', fontsize=8)
-    axs[0].legend(frameon=False, fontsize=7)
-    fig.tight_layout()
+        ax.set_title(figstyle.wrap(f'{FIG_TITLE[y]}, {DESIGN_TITLE[dg]}', 38))
+    fig.legend(*axs[0, 0].get_legend_handles_labels(), loc='outside lower center', ncol=2, frameon=False)
     savefig(fig, 'fig_charls_bandwidth')
     plt.close(fig)
     # density
@@ -211,22 +211,23 @@ def figures(m, bs, s):
     dt = pd.read_csv(os.path.join(RES, 'density_test.csv'))
     r = dt[dt.h_factor == 1.0].iloc[0]
     g = db[(db['mid'] > -15) & (db['mid'] < 20)]
-    fig, ax = plt.subplots(figsize=(6, 3))
+    fig, ax = plt.subplots(figsize=(figstyle.width('fig_charls_density'), 2.8))
     ax.bar(g['mid'] + 60, g['count'], width=1 / 12, color=np.where(g['mid'] < 0, '#9ecae1', '#3182bd'))
     ax.axvline(60, color='k', lw=0.8, ls='--')
     if WAVE != 2018:
         lo, hi = json.load(open(os.path.join(RES, 'extraction_log.json'), encoding='utf-8'))['famine_cohort_x_range']
         ax.axvspan(lo + 60, hi + 60, color='#fdae6b', alpha=0.4, lw=0, label='born 1959–1961 (ID card)')
-        ax.legend(frameon=False, fontsize=7, loc='upper right')
+        ax.legend(frameon=False, loc='upper right')
     ax.set_xlabel('age (years, monthly bins)')
     ax.set_ylabel('respondents')
-    ax.set_title(f"McCrary test: log difference {r['theta']:.3f} (SE {r['se']:.3f}), p = {r['p']:.2f}, h = {r['h']:.1f}", fontsize=8)
+    ptxt = 'p < 0.001' if r['p'] < 0.001 else f"p = {r['p']:.2f}"
+    ax.set_title(f"McCrary test: log difference {r['theta']:.3f} (SE {r['se']:.3f}), {ptxt}, h = {r['h']:.1f}")
     fig.tight_layout()
     savefig(fig, 'fig_charls_density')
     plt.close(fig)
     # forest plot (regions)
-    fig, axs = plt.subplots(1, 4, figsize=(13, 3.6), sharey=True)
-    for ax, (y, dg) in zip(axs, [('srh_good', 'ITT'), ('srh_good', 'FRD'), ('srh', 'ITT'), ('srh', 'FRD')]):
+    fig, axs = plt.subplots(2, 2, figsize=(figstyle.width('fig_charls_forest'), 6.6), sharey=True)
+    for ax, (y, dg) in zip(axs.flat, [('srh_good', 'ITT'), ('srh_good', 'FRD'), ('srh', 'ITT'), ('srh', 'FRD')]):
         g = s[(s.outcome == y) & (s.design == dg) & (s.kind != 'heterogeneity')].reset_index(drop=True)
         ypos = np.arange(len(g))[::-1]
         # axis limits: 1.5 interval widths around the federated and IVW intervals; wider
@@ -238,7 +239,7 @@ def figures(m, bs, s):
         L, U = lo_r - 1.5 * wd, hi_r + 1.5 * wd
         for yy, (_, rr) in zip(ypos, g.iterrows()):
             if not np.isfinite(rr['tau_bc']):
-                ax.text(0, yy, 'failed', fontsize=7, va='center')
+                ax.text(0, yy, 'failed', va='center')
                 continue
             c_ = '#08306b' if rr['kind'] == 'federated' else ('#e6550d' if rr['kind'] == 'meta' else '#6baed6')
             lo, hi, t = rr['tau_bc'] - 1.96 * rr['se_rb'], rr['tau_bc'] + 1.96 * rr['se_rb'], rr['tau_bc']
@@ -250,19 +251,20 @@ def figures(m, bs, s):
             if hi > U:
                 ax.plot(U, yy, '>', color=c_, ms=5)
             if lo < L or hi > U:
-                ax.text(U, yy + 0.3, f'{t:.2f} [{lo:.1f}, {hi:.1f}]', fontsize=6, ha='right', color=c_)
+                ax.text(U, yy + 0.35, f'{t:.2f} [{lo:.1f}, {hi:.1f}]', ha='right', color=c_)
         ax.set_xlim(L, U)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         ax.set_yticks(ypos)
         ax.set_yticklabels([REGION_EN.get(v, v) for v in g['site']])
         ax.axvline(0, color='grey', lw=0.8)
-        ax.set_title(f'{FIG_TITLE[y]}, {DESIGN_TITLE[dg]}', fontsize=8)
+        ax.set_title(figstyle.wrap(f'{FIG_TITLE[y]}, {DESIGN_TITLE[dg]}', 34))
         ax.set_xlabel('robust BC estimate, 95% CI')
     fig.tight_layout()
     savefig(fig, 'fig_charls_forest')
     plt.close(fig)
-    # random partitions of the same records into sites
+    # partitions of the same records
     pt = pd.read_csv(os.path.join(RES, 'partition_invariance.csv'))
-    fig, axs = plt.subplots(1, 2, figsize=(11, 3.3))
+    fig, axs = plt.subplots(1, 2, figsize=(figstyle.width('fig_charls_partitions'), 3.5), layout='constrained')
     for ax, y in zip(axs, ('srh_good', 'srh')):
         g = pt[pt.outcome == y].sort_values('K')
         ax.fill_between(g['K'], g['fed_ci_lo'], g['fed_ci_hi'], color='#c6dbef', label='federated robust 95% CI')
@@ -270,12 +272,11 @@ def figures(m, bs, s):
         ax.plot(g['K'], g['ivw_tau_bc'], color='#e6550d', marker='.', lw=1, label='IVW of site estimates')
         ax.plot(g['K'], g['mean_tau_bc'], color='#31a354', marker='.', lw=1, label='simple average of site estimates')
         ax.axhline(0, color='grey', lw=0.8)
-        ax.set_xlabel('number of sites K (random partition of the same records)')
-        ax.set_title(FIG_TITLE[y] + ', ITT')
+        ax.set_xlabel('number of sites K\n(random partition of the same records)')
+        ax.set_title(figstyle.wrap(FIG_TITLE[y] + ', ITT', 40))
         lo, hi = np.nanpercentile(np.r_[g['ivw_tau_bc'], g['mean_tau_bc'], g['fed_ci_lo'], g['fed_ci_hi']], [1, 99])
         ax.set_ylim(lo - 0.1 * (hi - lo), hi + 0.1 * (hi - lo))
-    axs[0].legend(frameon=False, fontsize=7)
-    fig.tight_layout()
+    fig.legend(*axs[0].get_legend_handles_labels(), loc='outside lower center', ncol=2, frameon=False)
     savefig(fig, 'fig_charls_partitions')
     plt.close(fig)
 

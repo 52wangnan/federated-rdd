@@ -1,0 +1,10 @@
+{
+  "seed": 20261011,
+  "repetitions": 500,
+  "seed_sequence": "[20261011, 3, K, 0, rep]",
+  "bandwidth": "IK, b=h; local sites select their own h",
+  "sources": {
+    "results\\sim\\sim_raw.csv": "cdc5a79616789c6a655ce7afb8ccb652d0022b1b8803c41a79c12a51214553d8",
+    "results\\charls_ik\\regions.csv": "f579dad851ea308cc7cc102edfe5eda67420cda49ab85ba12c2b28935a7d14eb"
+  }
+}
