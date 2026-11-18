@@ -35,7 +35,7 @@ def side_fit(gram, order):
     return invG, invG @ gram['RD'][:order + 1]
 
 
-def gamma_fwl(fits, my):
+def gamma_fwl(fits, my, return_info=False):
     """Covariate slopes common to the listed (gram, order) polynomial fits (Frisch-Waugh-Lovell:
     the side polynomials are partialled out).  Returns p x my."""
     ZWZ = ZWY = 0.0
@@ -49,7 +49,43 @@ def gamma_fwl(fits, my):
     gamma = np.zeros((ZWZ.shape[0], my))
     if keep.any():
         gamma[keep] = np.linalg.solve(ZWZ[np.ix_(keep, keep)], ZWY[keep])
-    return gamma
+    info = dict(keep=keep, residual_gram=ZWZ)
+    return (gamma, info) if return_info else gamma
+
+
+class InvalidFit(ValueError):
+    """A prespecified design/variance feasibility failure, not an outcome-size filter."""
+
+
+def check_final_design(gh, fp, fq, info, my, p, q, nu, h, b, corr):
+    """Check identifiability and residual degrees of freedom using existing Gram blocks.
+
+    A redundant covariate may be dropped only when both reported RD contrasts are
+    invariant to the unidentified coefficient direction. The effective joint design
+    must also leave positive residual degrees of freedom in the h window. These
+    checks apply equally to pooled, federated and single-site fits, without an SE floor.
+    """
+    n = sum(int(gh[s]['n']) for s in ('-', '+'))
+    rank_w = 0 if info is None else int(info['keep'].sum())
+    rank = 2 * (p + 1) + rank_w
+    if n <= rank:
+        raise InvalidFit('saturated_joint_design: n_h=%d, effective_rank=%d, residual_df=%d' % (n, rank, n-rank))
+    if info is not None and not info['keep'].all():
+        keep = info['keep']; G = info['residual_gram']
+        omitted = np.flatnonzero(~keep)
+        A = np.linalg.solve(G[np.ix_(keep, keep)], G[np.ix_(keep, ~keep)]) if keep.any() else np.zeros((0, len(omitted)))
+        null = np.zeros((len(keep), len(omitted)))
+        null[keep] = -A
+        null[omitted, np.arange(len(omitted))] = 1
+        cw = fp['+'][1][nu, my:] - fp['-'][1][nu, my:]
+        qw = cw - (h / b)**(p+1) * (corr['+'] * fq['+'][1][p+1, my:] - corr['-'] * fq['-'][1][p+1, my:])
+        for label, weights in [('conventional', cw), ('bias_corrected', qw)]:
+            sensitivity = weights @ null
+            tolerance = 1e-8 * np.maximum(1., np.sum(np.abs(weights[:, None] * null), axis=0))
+            if np.any(np.abs(sensitivity) > tolerance):
+                raise InvalidFit('unidentified_rd_contrast: %s contrast depends on dropped covariate coefficients' % label)
+    return dict(joint_n_h=n, effective_rank=rank, residual_df=n-rank,
+                covariates_kept=rank_w, covariates_dropped=0 if info is None else int((~info['keep']).sum()))
 
 
 def independent_columns(ZWZ, tol=1e-10):
@@ -133,7 +169,7 @@ def estimate(fed, h, b, p=1, q=2, kernel='triangular', vce='hc1', level=0.95, ca
                         f'{tag}:gram')
     gh = {s: grams[(s, h, p + 1)] for s in sides}
     gb = {s: grams[(s, b, q)] for s in sides}
-    gamma = gamma_fwl([(gh[s], p) for s in sides], my) if covs else np.zeros((0, my))
+    gamma, gamma_info = gamma_fwl([(gh[s], p) for s in sides], my, return_info=True) if covs else (np.zeros((0, my)), None)
     S = np.vstack([np.eye(my), -gamma])                       # data columns -> adjusted outcomes
     nu = deriv
     scale = factorial(nu) / h ** nu                           # scaled coefficient -> nu! x d^nu m / dx^nu
@@ -149,6 +185,7 @@ def estimate(fed, h, b, p=1, q=2, kernel='triangular', vce='hc1', level=0.95, ca
         corr[s] = (fp[s][0] @ Lt[s])[nu]
         tcl = tcl + sg * scale * bp[nu]
         tbc = tbc + sg * scale * (bp[nu] - (h / b) ** (p + 1) * corr[s] * bq[p + 1])
+    fit_diagnostics = check_final_design(gh, fp, fq, gamma_info, my, p, q, nu, h, b, corr)
     if my == 1:
         combos = {'tau': np.array([1.0])}
         tau_cl, tau_bc = float(tcl[0]), float(tbc[0])
@@ -184,7 +221,7 @@ def estimate(fed, h, b, p=1, q=2, kernel='triangular', vce='hc1', level=0.95, ca
     out = dict(h=float(h), b=float(b), p=p, q=q, deriv=nu, kernel=kernel, vce=vce, level=level,
                n_h=[int(gh[s]['n']) for s in sides], n_b=[int(gb[s]['n']) for s in sides],
                tau_cl=tau_cl, se_cl=float(se[('tau', 'cl')]), tau_bc=tau_bc, se_rb=float(se[('tau', 'rb')]),
-               gamma=gamma)
+               gamma=gamma, fit_diagnostics=fit_diagnostics)
     out.update(_ci(tau_cl, out['se_cl'], tau_bc, out['se_rb'], z))
     # fitted local polynomial on each side (original units of x; covariate-adjusted outcome columns)
     out['side_coef'] = {s: (fp[s][1] @ S) / (h ** np.arange(p + 1))[:, None] for s in sides}

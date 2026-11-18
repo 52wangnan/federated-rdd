@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
 """Data-generating processes of the simulation study.
 
-S1  baseline linear design: X ~ U(-1, 1), Y = rho0 + T + rho2 X + e, e ~ N(0, 0.1^2), rho0 = 0.5,
+S1  Table 2: X ~ U(-1, 1), Y = rho0 + T + rho2 X + e, e ~ N(0, 0.1^2), rho0 = 0.5,
     rho2 = 1; N = 10,000 split into K equal sites; site k's
-    support is shifted by s_k ~ U(-0.1, 0.1) (slight shifts in support).  tau = 1.
-S2  covariate design: as S1 without shift plus p = 10 covariates,
+    support is shifted by s_k ~ U(-0.1, 0.1) ("slight shifts in support", Section 5.1.1).  tau = 1.
+S2  Tables 3-4: as S1 without shift plus p = 10 covariates,
     Y = eta0 + T + eta2 X + W'eta3 + e, W_k ~ N(0, (1 + lambda k)^2 I_p), lambda in {0, 0.1, 0.2, 0.4},
     eta3 = linspace(0.5, -0.5, p).  tau = 1.
-S3  site-specific effects and unequal site sizes.  N_k proportional to k, W_k ~ N(mu_k 1, s_k^2 I_3)
+S3  new: site-specific effects and unequal site sizes.  N_k proportional to k, W_k ~ N(mu_k 1, s_k^2 I_3)
     with mu_k = -0.5 + (k-1)/(K-1), s_k = 2 - (k-1)/(K-1); Y = 0.5 + T + X + W'eta3 + T * W_1 + e.
     Site effect tau_k = 1 + mu_k; pooled cutoff effect tau_pool = sum_k pi_k tau_k with pi_k = N_k / N
     (X has the same density in every site).
-S4  curvature at the cutoff (Lee 2008 design used by IK 2012 and CCT 2014, model 1),
+S4  new: curvature at the cutoff (Lee 2008 design used by IK 2012 and CCT 2014, model 1),
     X = 2 Beta(2, 4) - 1, quintic m(.) on each side, e ~ N(0, 0.1295^2), tau = 0.04.
-S6  site composition jumps at the cutoff.  Site k has intercept alpha_k = linspace(-0.5, 0.5, K) and keeps
+S6  new: site composition jumps at the cutoff.  Site k has intercept alpha_k = linspace(-0.5, 0.5, K) and keeps
     a record with X >= 0 with probability r_k = linspace(0.2, 0.8, K) and one with X < 0 with probability 1 - r_k
     (sites sample treated and control units at different rates);
     Y = alpha_k + T + X + e, e ~ N(0, 0.1^2), tau = 1 in every site.  P(site | X) jumps at 0, so the pooled RD
     picks up sum_k (pi_k+ - pi_k-) alpha_k unless site indicators are included.
 SUPPORT: public support of the centred running variable in each design (used instead of the sites' min / max).
-S5  pure quadratic curvature, X ~ U(-1, 1), Y = 0.5 + T + X + 8 X^2 (X < 0) - 6 X^2 (X >= 0) + e,
+S5  new: pure quadratic curvature, X ~ U(-1, 1), Y = 0.5 + T + X + 8 X^2 (X < 0) - 6 X^2 (X >= 0) + e,
     e ~ N(0, 0.1^2), tau = 1.  The local quadratic pilot fit is unbiased here, so the robust bias-corrected
     interval should have close to nominal coverage while the conventional one under-covers.
 """

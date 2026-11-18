@@ -1,0 +1,29 @@
+{
+  "seed": 20261011,
+  "repetitions": 500,
+  "configs": [
+    [
+      "S1",
+      0.0
+    ],
+    [
+      "S2",
+      0.0
+    ],
+    [
+      "S2",
+      0.1
+    ],
+    [
+      "S2",
+      0.2
+    ],
+    [
+      "S2",
+      0.4
+    ]
+  ],
+  "sites": "K in (5,10,20,40)",
+  "bandwidth": "each site selects its own IK bandwidth, b = h",
+  "sim_raw_sha256": "275f861d043c70a004137926d788f79f9a63eca255a993229fe364fa9ba83afd"
+}

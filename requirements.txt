@@ -4,5 +4,5 @@ scipy==1.17.1
 pandas==3.0.1
 matplotlib==3.10.8
 joblib==1.5.3
-# optional: comparison with the Python port of rdrobust (tests/test_fsrd.py::test_c_rdrobust_python_package)
-# rdrobust
+# official package used as an independent comparison in tests/test_fsrd.py::test_c_rdrobust_python_package
+rdrobust==2.1.1

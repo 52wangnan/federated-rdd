@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Decision analysis: what collaboration is worth.
+"""Decision analysis (coalitions of regions): what collaboration is worth.
 
     python charls/value_of_collaboration.py                 # both waves (2015 is the main wave)
     python charls/value_of_collaboration.py --wave 2015     # one wave

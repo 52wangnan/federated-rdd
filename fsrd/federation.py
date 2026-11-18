@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """Sites, the sponsor's aggregation channel, and the communication ledger.
 
-Threat model simulated here: an honest-but-curious sponsor and non-colluding sites.  Sites talk
-only to the sponsor; there is no peer-to-peer exchange.  Every upload is combined by secure
-aggregation (Bonawitz et al., 2017), so the sponsor sees only the element-wise SUM over sites of
-each statistic.  The only exceptions are keys whose name starts with 'min_' / 'max_' (range of the
-running variable), which are combined by min / max and are listed as such in the ledger.
+This is an in-process simulation of a sum-aggregation interface, not a cryptographic
+secure-aggregation implementation. A deployment could protect this interface using a
+separate secure-aggregation protocol under its stated adversary assumptions. This code
+provides neither cryptographic confidentiality nor differential privacy. With configured
+public support bounds, sites need not report minima/maxima; the optional legacy min_/max_
+keys are explicitly combined by min/max and listed in the ledger.
 
 A call Federation.round(name, fn, **params) runs fn(site, **params) at every site, sums the
 results and logs one communication round: the number of float64 values each site uploads, the

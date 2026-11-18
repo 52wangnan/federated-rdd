@@ -1,0 +1,9 @@
+outcome,design,mde_target,smallest_observed_N,smallest_observed_members,fewest_regions,N_from_fit,N_from_theory,N_available,extrapolated
+srh_good,FRD,0.1,,,,40446.24752185191,68069.08410404777,4343,True
+srh_good,FRD,0.05,,,,146360.1729409842,385056.8876730368,4343,True
+srh_good,ITT,0.1,,,,10035.83034618502,13739.362458391965,4432,True
+srh_good,ITT,0.05,,,,35044.20326275754,77721.57090807066,4432,True
+srh_good_all,FRD,0.1,,,,63790.24872277563,101845.3529301944,8588,True
+srh_good_all,FRD,0.05,,,,244222.42841485082,576124.3175142214,8588,True
+srh_good_all,ITT,0.1,,,,11505.810945859917,11617.225404388713,8757,True
+srh_good_all,ITT,0.05,,,,39843.52168484318,65716.95089612712,8757,True

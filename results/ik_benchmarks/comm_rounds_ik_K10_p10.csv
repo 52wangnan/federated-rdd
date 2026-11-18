@@ -1,0 +1,7 @@
+round,name,floats_up_per_site,floats_down,bytes_up_per_site
+1,ik:describe,7,0,56
+2,ik:window+hist,268,259,2144
+3,ik:cubic,41,3,328
+4,ik:quad,38,4,304
+5,est:gram,576,8,4608
+6,est:meat,28,92,224

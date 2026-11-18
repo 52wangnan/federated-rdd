@@ -334,10 +334,8 @@ def test_c_published_rdrobust_senate_example():
     """Senate data shipped with rdrobust (Cattaneo, Frandsen & Titiunik 2015): the published output of
     rdrobust(vote, margin) reports h = 17.754, 360 / 323 effective observations and a conventional
     estimate of 7.414 (Calonico, Cattaneo, Farrell & Titiunik 2017, Stata Journal)."""
-    path = os.environ.get('RDROBUST_SENATE_DTA', os.path.join(HERE, 'data', 'rdrobust_senate.dta'))
-    if not os.path.exists(path):
-        raise Skip('rdrobust_senate.dta not found')
-    d = pd.read_stata(path, convert_categoricals=False).dropna(subset=['vote', 'margin'])
+    path = os.path.join(HERE, 'fixtures', 'rdrobust_senate.csv')
+    d = pd.read_csv(path).dropna(subset=['vote', 'margin'])
     r = fsrd([Site(d['margin'].to_numpy(float), d['vote'].to_numpy(float))], bw=(17.754, 28.028))
     assert r['n_h'] == [360, 323], r['n_h']
     assert abs(r['tau_cl'] - 7.414) < 5e-4, r['tau_cl']

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Communication and run-time scaling of the federated protocol (R1-2, R4-5.6).
+"""Communication and run-time scaling of the federated protocol.
 
     python simulation/run_comm.py      -> results/comm/comm_scaling.csv, results/comm/comm_rounds.csv
 

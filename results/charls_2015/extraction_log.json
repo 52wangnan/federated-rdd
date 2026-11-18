@@ -1,0 +1,119 @@
+{
+ "raw_rows": {
+  "demographic": 21095,
+  "sample_info": 21789,
+  "health": 20967,
+  "pension": 20890,
+  "demographic_2013": 18605,
+  "demographic_2011": 17705,
+  "demographic_2018": 19816
+ },
+ "linked": {
+  "in_2013": 16218,
+  "in_2011_only": 1042
+ },
+ "filters": [
+  {
+   "step": "all respondents (2015 demographic file)",
+   "n": 21095
+  },
+  {
+   "step": "age in months observed",
+   "n": 20151
+  },
+  {
+   "step": "agricultural hukou",
+   "n": 13510
+  },
+  {
+   "step": "age >= 45",
+   "n": 12987
+  },
+  {
+   "step": ">= 1 chronic condition",
+   "n": 9208
+  },
+  {
+   "step": "province known",
+   "n": 9208
+  }
+ ],
+ "hukou_missing_after_age_filter": 2579,
+ "cohort_n": 9208,
+ "missing": {
+  "lunar_birthday": 71,
+  "pension": 174,
+  "srh": 4776,
+  "srh_good": 4776,
+  "srh_form": 451,
+  "srh_good_all": 451,
+  "cesd10": 1309,
+  "adl_any": 2106,
+  "adl_any_all": 37,
+  "han": 159,
+  "edu_illiterate": 178,
+  "edu_below_primary": 178,
+  "edu_primary": 178,
+  "edu_middle_plus": 178
+ },
+ "age_range_years": [
+  45.0,
+  102.41666666666667
+ ],
+ "x_is_monthly_grid": true,
+ "interview_ym_n": {
+  "201507": 5739,
+  "201508": 3449,
+  "201601": 20
+ },
+ "region_n": {
+  "华东": 2765,
+  "西南": 1889,
+  "华中": 1503,
+  "华北": 1218,
+  "华南": 687,
+  "西北": 678,
+  "东北": 468
+ },
+ "province_n": {
+  "四川省": 1024,
+  "山东省": 736,
+  "河南省": 731,
+  "云南省": 598,
+  "安徽省": 490,
+  "湖南省": 458,
+  "广东省": 447,
+  "江苏省": 442,
+  "内蒙古自治区": 431,
+  "河北省": 416,
+  "浙江省": 412,
+  "江西省": 388,
+  "湖北省": 314,
+  "山西省": 302,
+  "陕西省": 295,
+  "福建省": 290,
+  "甘肃省": 243,
+  "广西省": 240,
+  "辽宁省": 227,
+  "重庆市": 148,
+  "吉林省": 142,
+  "贵州省": 119,
+  "青海省": 115,
+  "黑龙江省": 99,
+  "天津": 67,
+  "新疆维吾尔自治区": 25,
+  "上海市": 7,
+  "北京": 2
+ },
+ "pension_by_side": {
+  "x<0": 0.018253576714356193,
+  "x>=0": 0.6799196787148595
+ },
+ "lunar_share": 0.833205647367845,
+ "srh_form_da001_share": 0.49389060180427086,
+ "adl_skipped_recoded_0": 2069,
+ "famine_cohort_x_range": [
+  -6.416666666666667,
+  -3.0833333333333335
+ ]
+}

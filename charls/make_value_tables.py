@@ -18,6 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from reporting import save_table  # noqa: E402
+import figstyle  # noqa: E402
 
 TAB = os.path.join(ROOT, 'output', 'tables')
 FIG = os.path.join(ROOT, 'output', 'figures')
@@ -37,7 +38,7 @@ def en(members):
 
 def main():
     os.makedirs(FIG, exist_ok=True)
-    plt.rcParams.update({'font.size': 9, 'axes.spines.top': False, 'axes.spines.right': False})
+    figstyle.setup()
     fits_all, sizes_all = [], []
     for wave, res in RES.items():
         if not os.path.exists(os.path.join(res, 'value_coalitions.csv')):
@@ -83,7 +84,8 @@ def main():
                            '(a site window with fewer than m records is not uploaded)')
         # figure: coalition curve
         outs = list(dict.fromkeys(co.outcome))
-        fig, axs = plt.subplots(len(outs), 2, figsize=(10, 3.8 * len(outs)), squeeze=False, gridspec_kw=dict(hspace=0.45))
+        fig, axs = plt.subplots(len(outs), 2, figsize=(figstyle.width('fig_value_coalitions'), 3.1 * len(outs)), squeeze=False,
+                                layout='constrained')
         for i, y in enumerate(outs):
             for j, dg in enumerate(('ITT', 'FRD')):
                 ax = axs[i, j]
@@ -92,45 +94,50 @@ def main():
                 sc_ = ax.scatter(g.N, 100 * g.mde, c=g.n_members, cmap='viridis', s=14, zorder=3)
                 nn = np.geomspace(g.N.min() * 0.8, g.N.max() * 4, 100)
                 ax.plot(nn, 100 * Z_MDE * np.exp(f.c) * nn ** (-f.a), color='#d62728', lw=1.2,
-                        label=f'fit: SE $\\propto N^{{-{f.a:.2f}}}$ (s.e. {f.a_se:.2f})')
+                        label=f'descriptive fit: SE $\\propto N^{{-{f.a:.2f}}}$')
                 full = g[g.n_members == g.n_members.max()].iloc[0]
                 ax.plot(nn, 100 * full.mde * (nn / full.N) ** (-0.4), color='grey', ls='--', lw=1,
-                        label=r'$N^{-2/5}$ through the seven-region point')
+                        label='$N^{-2/5}$ through the\nseven-region point')
                 for tgt in (0.10, 0.05):
                     ax.axhline(100 * tgt, color='k', lw=0.6, ls=':')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlabel('coalition sample size N (records)')
                 ax.set_ylabel('MDE (percentage points)')
-                ax.set_title(f'{FIG_TITLE.get(y, y)}, {DESIGN_TITLE[dg]}', fontsize=9)
-                ax.legend(frameon=False, fontsize=7)
-        fig.colorbar(sc_, ax=axs, label='regions in coalition', shrink=0.6)
+                ax.set_title(figstyle.wrap(f'{FIG_TITLE.get(y, y)}, {DESIGN_TITLE[dg]}', 33))
+                # legend under the panel: inside it would cover coalitions or the target lines
+                ax.legend(frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.24))
+        fig.colorbar(sc_, ax=axs, label='regions in coalition', shrink=0.6 if len(outs) > 1 else 0.9)
         fig.savefig(os.path.join(FIG, 'fig_value_coalitions' + suf + '.png'), dpi=300, bbox_inches='tight')
         fig.savefig(os.path.join(FIG, 'fig_value_coalitions' + suf + '.pdf'), bbox_inches='tight')
         plt.close(fig)
         # figure: Shapley shares vs size shares
         keys = list(dict.fromkeys(zip(sh.outcome, sh.design)))
-        fig, axs = plt.subplots(1, len(keys), figsize=(4.2 * len(keys), 3.2), squeeze=False)
-        for ax, (y, dg) in zip(axs[0], keys):
+        nc = min(2, len(keys))
+        nr = -(-len(keys) // nc)
+        fig, axs = plt.subplots(nr, nc, figsize=(figstyle.width('fig_value_shapley'), 0.4 + 2.25 * nr), squeeze=False,
+                                layout='constrained')
+        for ax in axs.flat[len(keys):]:
+            ax.set_visible(False)
+        for ax, (y, dg) in zip(axs.flat, keys):
             g = sh[(sh.outcome == y) & (sh.design == dg)].sort_values('N_share')
             pos = np.arange(len(g))
             ax.barh(pos - 0.18, g.N_share, height=0.36, color='#bdbdbd', label='sample-size share')
             ax.barh(pos + 0.18, g.shapley_share, height=0.36, color='#08306b', label='Shapley share of precision')
             ax.set_yticks(pos)
             ax.set_yticklabels([REGION_EN.get(v, v) for v in g.region])
-            ax.set_title(f'{FIG_TITLE.get(y, y)}, {DESIGN_TITLE[dg]}', fontsize=8)
+            ax.set_title(figstyle.wrap(f'{FIG_TITLE.get(y, y)}, {DESIGN_TITLE[dg]}', 36))
             ax.set_xlabel('share')
-        axs[0, 0].legend(frameon=False, fontsize=7)
-        fig.tight_layout()
+        fig.legend(*axs[0, 0].get_legend_handles_labels(), loc='outside lower center', ncol=2, frameon=False)
         fig.savefig(os.path.join(FIG, 'fig_value_shapley' + suf + '.png'), dpi=300, bbox_inches='tight')
         fig.savefig(os.path.join(FIG, 'fig_value_shapley' + suf + '.pdf'), bbox_inches='tight')
         plt.close(fig)
     if fits_all:
         f = pd.concat(fits_all)
         f['outcome'] = f.outcome.map(lambda v: OUT_LABEL.get(v, v))
-        save_table(f[['wave', 'outcome', 'design', 'a', 'a_se', 'a_theory', 'r2', 'coalitions_ok', 'coalitions_failed',
+        save_table(f[['wave', 'outcome', 'design', 'a', 'a_theory', 'r2', 'coalitions_ok', 'coalitions_failed',
                       'N_all', 'se_all', 'mde_all']], 'table_value_fit', TAB, digits=3,
-                   caption='Coalition curve: OLS of log robust SE on log N over all coalitions (theory: a = 2/5)')
+                   caption='Descriptive coalition curve: OLS of log robust SE on log N (theory: a = 2/5). Coalitions overlap; no independent-sample OLS uncertainty is reported.')
         s = pd.concat(sizes_all)
         s['outcome'] = s.outcome.map(lambda v: OUT_LABEL.get(v, v))
         s['smallest_observed_members'] = s.smallest_observed_members.fillna('').map(lambda v: en(v) if v else '')
