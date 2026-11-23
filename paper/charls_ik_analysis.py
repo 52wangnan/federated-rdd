@@ -1,5 +1,5 @@
 """CHARLS analysis with IK bandwidths (b = h) reported in the paper: main and regional estimates (Table 9),
-partitions of the same records across sites (Figures 2-4), covariate balance, placebo cutoffs and bandwidth checks,
+partitions of the same records across sites (Figures 2 and 3), covariate balance, placebo cutoffs and bandwidth checks,
 together with the summary of the existing Monte Carlo draws (reused without transformation).
 Run: python paper/charls_ik_analysis.py      (needs the extracted CHARLS analysis file in data/)
 """
@@ -105,9 +105,9 @@ def charls():
     save(pdpart,'partitions')
     pdpart=pd.read_csv(OUT/'partitions.csv')
     plt.rcParams.update({'font.family':'DejaVu Serif','font.size':10})
-    for number,kind in [(2,'covariate'),(3,'allocation'),(4,'K')]:
+    for kind in ['covariate','allocation','K']:
         z=pdpart[pdpart.kind==kind];fig,ax=plt.subplots(figsize=(6.3,3.4));ax.plot(z.rep,z.tau,label='FSRD / pooled',lw=2);ax.plot(z.rep,z.ivw,label='Inverse-variance average',lw=1);ax.plot(z.rep,z['mean'],label='Simple average',lw=1)
-        ax.set(xlabel='Number of participants' if kind=='K' else 'Partition replication',ylabel='Estimated health-score jump');ax.legend(fontsize=8);ax.grid(alpha=.2);fig.tight_layout();fig.savefig(OUT/f'figure{number}.png',dpi=220);plt.close(fig)
+        ax.set(xlabel='Number of participants' if kind=='K' else 'Partition replication',ylabel='Estimated health-score jump');ax.legend(fontsize=8);ax.grid(alpha=.2);fig.tight_layout();fig.savefig(OUT/f'partitions_{kind}.png',dpi=220);plt.close(fig)
     reg=[]
     for s in S:
         try:r=rc.run([s],bw='ik',covs=False);reg.append(rc.row_of(r,site=s.name))

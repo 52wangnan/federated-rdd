@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Site composition that changes at the cutoff (design S6, Table 8) and coalition precision (Figure 5).
+"""Site composition that changes at the cutoff (design S6, Table 8) and coalition precision (Figure 4).
 python paper/composition_coalitions.py --jobs 8
 python paper/composition_coalitions.py --tables-only
 S6: 500 replications x 4 values of K, IK fits with and without site fixed effects.

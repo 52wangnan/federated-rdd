@@ -1,5 +1,5 @@
 {
-  "version": "2026-11-18",
+  "version": "2026-11-22",
   "scope": "code, tests, synthetic simulation records and the aggregate outputs reported in the paper; no CHARLS individual records (data/ is excluded)",
   "files": [
     {
@@ -14,8 +14,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "d5a750bb52f1937bb8bf1983323c09d9f1b734af8e9a2ec285213f19838a7322",
-      "bytes": 12035
+      "sha256": "236f8d44c2b350d86b60f78694f5702e145336a5abaf8e1a21456dd2dea067fd",
+      "bytes": 13961
     },
     {
       "path": "charls/compare_waves.py",
@@ -114,8 +114,8 @@
     },
     {
       "path": "paper/charls_ik_analysis.py",
-      "sha256": "9016342a9192885e32cce4f05fc26b5d65669711ad8f4eff073f059a0f95e81b",
-      "bytes": 8959
+      "sha256": "7990ff926fb01e2b828123188773a0d9c57eb78f60425752b58fcea29f7d3a51",
+      "bytes": 8947
     },
     {
       "path": "paper/comm_ik.py",
@@ -124,7 +124,7 @@
     },
     {
       "path": "paper/composition_coalitions.py",
-      "sha256": "db02d7e63b14289fe2c8d2a674965bf0ef80a8b85142af19911aa0068bb2afc1",
+      "sha256": "200d7d8c11b9846d36da237c69521996083a3ba1599e941eef52cd391bc9542a",
       "bytes": 9638
     },
     {
@@ -139,13 +139,13 @@
     },
     {
       "path": "paper/figures_charls.py",
-      "sha256": "71b9b397d27e41b8c9b589bdb5b2bcaa732638c4f860affdaaaf4b3df4c4bc73",
+      "sha256": "1babcbdd8812b1a8875ce32ada8d70bd084ea854d4513b32003bdf611756fe87",
       "bytes": 3184
     },
     {
       "path": "paper/figures_vector.py",
-      "sha256": "c9de0fc7693ea5bb8dfbbd07c8f9423ee2ed7008c6f700ed22bd55980f887d80",
-      "bytes": 3036
+      "sha256": "4e5cf8603a4c6c078e112e432f0538cc82897cdc51ba406960cc290196aac59e",
+      "bytes": 4315
     },
     {
       "path": "paper/local_ik_benchmarks.py",
@@ -393,21 +393,6 @@
       "bytes": 8764
     },
     {
-      "path": "results/charls_ik/figure2.png",
-      "sha256": "c2ceb7f9b02a196804f032a5412e735cc911531ab49cc708730f3f0361415b4e",
-      "bytes": 117826
-    },
-    {
-      "path": "results/charls_ik/figure3.png",
-      "sha256": "89260001709eda43515a080f21588b02b2bee2a4f8d16af0ea0808c4eee4085d",
-      "bytes": 130633
-    },
-    {
-      "path": "results/charls_ik/figure4.png",
-      "sha256": "b805369ba7d739a3f8fd3edad4d9e9da76f4b28a78524900abf33d088e1e12a7",
-      "bytes": 153759
-    },
-    {
       "path": "results/charls_ik/ik_equivalence_checks.csv",
       "sha256": "35f73a2af729d1c7f797b069d5bd56d5dcaa12910695c1a634f24507415afdca",
       "bytes": 317
@@ -426,6 +411,21 @@
       "path": "results/charls_ik/partitions.csv",
       "sha256": "7d64155f8b2f0f1fd51e349e25be2a9ff1b238435963833d5005c90aa7771aff",
       "bytes": 17549
+    },
+    {
+      "path": "results/charls_ik/partitions_K.png",
+      "sha256": "b805369ba7d739a3f8fd3edad4d9e9da76f4b28a78524900abf33d088e1e12a7",
+      "bytes": 153759
+    },
+    {
+      "path": "results/charls_ik/partitions_allocation.png",
+      "sha256": "89260001709eda43515a080f21588b02b2bee2a4f8d16af0ea0808c4eee4085d",
+      "bytes": 130633
+    },
+    {
+      "path": "results/charls_ik/partitions_covariate.png",
+      "sha256": "c2ceb7f9b02a196804f032a5412e735cc911531ab49cc708730f3f0361415b4e",
+      "bytes": 117826
     },
     {
       "path": "results/charls_ik/placebo.csv",
@@ -584,21 +584,16 @@
     },
     {
       "path": "results/figures_vector/Figure_2.pdf",
-      "sha256": "6d2c95ea352b49230b220887b148fe8a17a0c75450663a35adf714205246c494",
-      "bytes": 12387
+      "sha256": "e560ea66684ceaeab1173f952423d26fccaba5e52ac33ccb0d0cb6cceb6de845",
+      "bytes": 17296
     },
     {
       "path": "results/figures_vector/Figure_3.pdf",
-      "sha256": "f57c90b06ed7fa23924dcde27ef76beffede7d32fc3821e0caadfbb98454e4f5",
-      "bytes": 12287
-    },
-    {
-      "path": "results/figures_vector/Figure_4.pdf",
       "sha256": "ca4921da0e215507327c5d8fa1a0b03d28d399a8d9c63403f84470bda99c61eb",
       "bytes": 14415
     },
     {
-      "path": "results/figures_vector/Figure_5.pdf",
+      "path": "results/figures_vector/Figure_4.pdf",
       "sha256": "9545d98084aa16690a0063a20e0b77031bf1b59ddd7fbb5481317da8e0aef47b",
       "bytes": 18202
     },
@@ -664,8 +659,8 @@
     },
     {
       "path": "run_all.py",
-      "sha256": "a3bbd5592456366e52bad256bbde8cf33ce60d60562b9022c5cc3f844f23e67a",
-      "bytes": 5351
+      "sha256": "883bc1209577a8fbde805ab10cf509a81cfc64ac7e0de28b623b638e0f06c7f1",
+      "bytes": 5355
     },
     {
       "path": "simulation/dgp.py",

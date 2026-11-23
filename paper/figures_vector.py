@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Vector (PDF) versions of Figures 2-5, redrawn from stored aggregate results with the plotting code that
-produced the PNG versions (paper/charls_ik_analysis.py for Figures 2-4, paper/figures_charls.py for Figure 5);
-TrueType fonts are embedded. No microdata is read.
+"""Vector (PDF) versions of Figures 2-4 of the paper, redrawn from stored aggregate results; TrueType fonts are
+embedded. No microdata is read.
     python paper/figures_vector.py
-Figure 1 is a diagram drawn by the authors.
+
+Figure 2  estimates under heterogeneous site composition, two panels: (a) covariate composition across ten
+          participants, (b) treated-to-control ratios across participants (results/charls_ik/partitions.csv);
+Figure 3  conventional covariate-adjusted IK estimates by number of participants (same file);
+Figure 4  coalition sample size and minimum detectable effects (results/composition_coalitions/).
+The plotting code follows the PNG versions in paper/charls_ik_analysis.py (Figures 2 and 3) and
+paper/figures_charls.py (Figure 4). Figure 1 is a diagram drawn by the authors.
 """
 from pathlib import Path
 import numpy as np
@@ -19,20 +24,39 @@ CON = ROOT / 'results' / 'charls_ik'
 CO = ROOT / 'results' / 'composition_coalitions'
 
 
-def figures_2_to_4():
+def figure_2():
+    """Two panels with a shared y axis and one legend."""
+    pdpart = pd.read_csv(CON / 'partitions.csv')
+    plt.rcParams.update({'font.family': 'DejaVu Serif', 'font.size': 9})
+    fig, axes = plt.subplots(1, 2, figsize=(6.3, 3.0), sharey=True)
+    panels = [('covariate', '(a) Covariate composition'), ('allocation', '(b) Treated-to-control ratios')]
+    for ax, (kind, title) in zip(axes, panels):
+        z = pdpart[pdpart.kind == kind]
+        ax.plot(z.rep, z.tau, label='FSRD / pooled', lw=2)
+        ax.plot(z.rep, z.ivw, label='Inverse-variance average', lw=1)
+        ax.plot(z.rep, z['mean'], label='Simple average', lw=1)
+        ax.set_title(title, fontsize=9)
+        ax.set_xlabel('Partition replication')
+        ax.grid(alpha=.2)
+    axes[0].set_ylabel('Estimated health-score jump')
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', ncol=3, fontsize=8, frameon=False, bbox_to_anchor=(0.5, 1.0))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.savefig(OUT / 'Figure_2.pdf'); plt.close(fig)
+
+
+def figure_3():
     pdpart = pd.read_csv(CON / 'partitions.csv')
     plt.rcParams.update({'font.family': 'DejaVu Serif', 'font.size': 10})
-    for number, kind in [(2, 'covariate'), (3, 'allocation'), (4, 'K')]:
-        z = pdpart[pdpart.kind == kind]; fig, ax = plt.subplots(figsize=(6.3, 3.4))
-        ax.plot(z.rep, z.tau, label='FSRD / pooled', lw=2); ax.plot(z.rep, z.ivw, label='Inverse-variance average', lw=1)
-        ax.plot(z.rep, z['mean'], label='Simple average', lw=1)
-        ax.set(xlabel='Number of participants' if kind == 'K' else 'Partition replication', ylabel='Estimated health-score jump')
-        ax.legend(fontsize=8); ax.grid(alpha=.2); fig.tight_layout()
-        fig.savefig(OUT / f'Figure_{number}.pdf'); plt.close(fig)
-        plt.rcParams.update({'font.family': 'DejaVu Serif', 'font.size': 10})
+    z = pdpart[pdpart.kind == 'K']; fig, ax = plt.subplots(figsize=(6.3, 3.4))
+    ax.plot(z.rep, z.tau, label='FSRD / pooled', lw=2); ax.plot(z.rep, z.ivw, label='Inverse-variance average', lw=1)
+    ax.plot(z.rep, z['mean'], label='Simple average', lw=1)
+    ax.set(xlabel='Number of participants', ylabel='Estimated health-score jump')
+    ax.legend(fontsize=8); ax.grid(alpha=.2); fig.tight_layout()
+    fig.savefig(OUT / 'Figure_3.pdf'); plt.close(fig)
 
 
-def figure_5():
+def figure_4():
     plt.rcdefaults(); matplotlib.rcParams['pdf.fonttype'] = 42
     plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 10, 'axes.spines.top': False, 'axes.spines.right': False})
     co = pd.read_csv(CO / 'coalitions_ik.csv'); fit = pd.read_csv(CO / 'coalition_fit.csv')
@@ -47,10 +71,10 @@ def figure_5():
     ax.set_xlabel('Coalition sample size N'); ax.set_ylabel('MDE (health-score points)')
     ax.set_xscale('log'); ax.set_yscale('log'); ax.grid(alpha=.2, which='major'); ax.legend(fontsize=8, frameon=False)
     cb = fig.colorbar(dots, ax=ax, ticks=range(1, 8), pad=.02); cb.set_label('Number of regions')
-    fig.tight_layout(); fig.savefig(OUT / 'Figure_5.pdf', bbox_inches='tight'); plt.close(fig)
+    fig.tight_layout(); fig.savefig(OUT / 'Figure_4.pdf', bbox_inches='tight'); plt.close(fig)
 
 
 if __name__ == '__main__':
     OUT.mkdir(parents=True, exist_ok=True)
-    figures_2_to_4(); figure_5()
+    figure_2(); figure_3(); figure_4()
     print('written to', OUT)

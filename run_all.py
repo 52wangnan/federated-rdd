@@ -44,7 +44,7 @@ def main():
     if a.paper:
         if not a.tables_only:
             step(['tests/run_tests.py'], 'unit tests')
-            step(['paper/charls_ik_analysis.py'], 'CHARLS IK analyses (Table 9, Figures 2-4)')
+            step(['paper/charls_ik_analysis.py'], 'CHARLS IK analyses (Table 9, Figures 2 and 3)')
             step(['paper/smallcell_rule.py'], 'small-cell rule (Supplementary Table C.9)')
             step(['paper/comm_ik.py'], 'communication and run time of the IK pipeline (Table 6)')
         extension = ['paper/extensions_s3_curvature.py']
@@ -61,9 +61,9 @@ def main():
         step(coalition, 'site composition and coalition precision (Table 8)')
         local = ['paper/local_ik_benchmarks.py'] + (['--summary'] if a.tables_only else (['--jobs', str(a.jobs)] if a.jobs else []))
         step(local, 'local IK benchmarks for designs S1 and S2 (Tables 2 and 4)')
-        step(['paper/figures_charls.py'], 'Figure 5 and Supplementary Figure C.2')
+        step(['paper/figures_charls.py'], 'Figure 4 and Supplementary Figure C.2')
         step(['paper/figures_bandwidth.py'], 'Supplementary Figures C.3 and C.4')
-        step(['paper/figures_vector.py'], 'vector versions of Figures 2-5')
+        step(['paper/figures_vector.py'], 'vector versions of Figures 2-4')
         return
     if not a.tables_only:
         step(['tests/run_tests.py'], 'unit tests')

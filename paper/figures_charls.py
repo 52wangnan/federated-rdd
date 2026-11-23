@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Figure 5 (coalition sample size and minimum detectable effects) and Supplementary Figure C.2 (self-rated health
+"""Figure 4 (coalition sample size and minimum detectable effects) and Supplementary Figure C.2 (self-rated health
 and pension receipt by age), from result CSVs only; no microdata is read.
 
     python paper/figures_charls.py

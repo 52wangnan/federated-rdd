@@ -1,75 +1,94 @@
-# federated-rdd：无损联邦断点回归（精确 RD 与模糊 RD）
+# federated-rdd: lossless federated regression discontinuity (sharp and fuzzy RD)
 
-**English summary.** A Python implementation of federated regression discontinuity design (RDD). Several data holders (hospitals, regions, firms) estimate a treatment effect at a cutoff together without pooling individual records: each site uploads only kernel-weighted sums (Gram and "meat" matrices, counts), and a sponsor solves the normal equations. With double-double summation the federated estimate is **bit-for-bit identical** to the estimate on the pooled data. Supports sharp and fuzzy RD, CCT (MSE-optimal) and IK bandwidths, robust bias-corrected confidence intervals, covariates, clustered variance, site fixed effects and a federated McCrary density test. Results agree with the official `rdrobust` 2.1.1 to < 1e-10.
+A Python implementation of federated regression discontinuity design (RDD). Several data holders (hospitals, regions,
+firms) estimate a treatment effect at a cutoff together without pooling individual records: each site uploads only
+kernel-weighted sums (Gram and "meat" matrices, counts), and a sponsor solves the normal equations. With double-double
+summation the federated estimate is **bit-for-bit identical** to the estimate on the pooled data. Supports sharp and
+fuzzy RD, CCT (MSE-optimal) and IK bandwidths, robust bias-corrected confidence intervals, covariates, clustered
+variance, site fixed effects and a federated McCrary density test. Results agree with the official `rdrobust` 2.1.1
+to < 1e-10.
 
 ---
 
-## 解决什么问题
+## The problem
 
-断点回归（RDD）是评估政策效果的常用方法：比如年满 60 岁才能领养老金，就可以比较 60 岁两侧的人群来估计养老金的效果。实际中数据往往分散在多家机构（多家医院、多个地区的统计部门、多家企业），出于隐私和合规不能汇总到一起。
+Regression discontinuity is a standard tool for evaluating policies: if people become eligible for a pension at
+age 60, comparing people just below and just above 60 estimates the effect of the pension. In practice the data are
+often spread over several organisations (hospitals, regional statistics offices, firms) that cannot pool them because
+of privacy and compliance rules.
 
-这个库让各机构**不交出个体数据**也能共同完成断点回归：
+This library lets the organisations carry out a regression discontinuity analysis together **without handing over
+individual records**:
 
-- 每家机构（站点）只上传求和后的统计量，例如核加权的 Gram 矩阵、残差的夹心矩阵和计数；
-- 协调方（sponsor）只看到所有站点的总和（模拟安全聚合），据此解正规方程、算带宽和置信区间；
-- 联邦估计与把数据合并后的集中式估计**逐位相同**，不是近似。
+- each organisation (site) uploads only summed statistics, such as kernel-weighted Gram matrices, sandwich matrices of
+  residuals and counts;
+- the coordinator (sponsor) sees only the sums over all sites (simulated secure aggregation) and uses them to solve the
+  normal equations and compute the bandwidth and confidence intervals;
+- the federated estimate is **bit-for-bit identical** to the centralized estimate on the pooled data, not an
+  approximation.
 
-## 方法概要
+## Method overview
 
-| 环节 | 做法 |
+| Step | Approach |
 |---|---|
-| 无损聚合 | 站点对每条记录的贡献做双双精度（double-double）求和，以两个 float64 上传，sponsor 用同一方法合并，联邦与集中式结果舍入到同一个 double |
-| 带宽选择 | CCT MSE 最优带宽（逐步转写 rdrobust 的 `rdbwselect(mserd)`，方差改用可联邦的 HC 形式）；IK (2012) 带宽 |
-| 推断 | 稳健偏差校正置信区间（CCT 2014）；HC0–HC3、站点内嵌套聚类、按公共网格聚类 |
-| 扩展 | 协变量调整（CCFT 2019）、模糊 RD（delta 方法）、断点边际效应（deriv = 1）、离散驱动变量的质点调整、站点固定效应、小单元抑制规则 |
-| 诊断 | 联邦 McCrary (2008) 密度检验 |
-| 通信 | CCT 全流程 10 轮，每站上传量与站点样本量无关（仿真中约 6–47 KB） |
-| 威胁模型 | sponsor 诚实但好奇，站点之间不合谋；驱动变量的取值范围用公开的支撑边界，站点不上报自己的最小、最大值 |
+| Lossless aggregation | Each site sums its per-record contributions in double-double precision and uploads them as two float64 values; the sponsor combines them the same way, so the federated and centralized results round to the same double |
+| Bandwidth selection | CCT MSE-optimal bandwidth (a step-by-step transcription of rdrobust's `rdbwselect(mserd)`, with the variance replaced by a federable HC form); IK (2012) bandwidth |
+| Inference | Robust bias-corrected confidence intervals (CCT 2014); HC0–HC3, clustering nested within sites, clustering on a common grid |
+| Extensions | Covariate adjustment (CCFT 2019), fuzzy RD (delta method), marginal effect at the cutoff (deriv = 1), mass-point adjustment for discrete running variables, site fixed effects, small-cell suppression rule |
+| Diagnostics | Federated McCrary (2008) density test |
+| Communication | The full CCT pipeline takes 10 rounds and the IK pipeline used in the paper takes six; the upload per site does not depend on the site's sample size (about 6–47 KB per site for the CCT pipeline in the simulations) |
+| Threat model | The sponsor is honest but curious and sites do not collude; the range of the running variable uses public support bounds, so sites do not report their own minimum and maximum |
 
-## 目录结构
+## Repository layout
 
 ```
 federated-rdd/
-├─ fsrd/                  核心库
-│  ├─ federation.py       站点 Site、聚合通道 Federation、通信账本 Ledger、双双精度求和
-│  ├─ local.py            站点端计算（只返回求和后的统计量）
-│  ├─ lprd.py             sponsor 端：正规方程、偏差校正、HC/聚类夹心方差、模糊 RD
-│  ├─ bandwidth.py        联邦 CCT（mserd）带宽与 IK 带宽
-│  ├─ density.py          联邦 McCrary 密度检验
+├─ fsrd/                  core library
+│  ├─ federation.py       Site, aggregation channel Federation, communication Ledger, double-double summation
+│  ├─ local.py            site-side computations (return summed statistics only)
+│  ├─ lprd.py             sponsor side: normal equations, bias correction, HC/cluster sandwich variances, fuzzy RD
+│  ├─ bandwidth.py        federated CCT (mserd) and IK bandwidths
+│  ├─ density.py          federated McCrary density test
 │  ├─ api.py              fsrd() / centralized() / site_estimates() / meta_ivw() / meta_mean()
-│  ├─ kernels.py          核函数与边界核常数
-│  └─ reference.py        仅供测试：rdrobust 估计步骤的观测级逐行转写，作为独立对照
-├─ examples/quickstart.py 模拟数据上的最小示例
-├─ tests/                 单元测试（test_fsrd.py、test_fit_validity.py）、运行器 run_tests.py、公开示例数据 fixtures/
-├─ simulation/            蒙特卡洛仿真：数据生成（dgp.py）、仿真、通信基准、表图
-├─ charls/                CHARLS 实证案例：数据构建、分析、合作价值分析、多重检验、表图
-├─ paper/                 论文中各表、图的生成脚本（IK 带宽主分析、扩展设计、通信、小单元规则、作图）
-├─ results/               论文报告的汇总结果（CSV、图），不含任何个体记录
-├─ figstyle.py            作图样式
-├─ reporting.py           表格输出（CSV / Markdown / LaTeX）
-├─ run_all.py             一键运行
+│  ├─ kernels.py          kernels and boundary kernel constants
+│  └─ reference.py        tests only: observation-level transcription of rdrobust's estimation steps, as an independent check
+├─ examples/quickstart.py minimal example on simulated data
+├─ tests/                 unit tests (test_fsrd.py, test_fit_validity.py), runner run_tests.py, public example data in fixtures/
+├─ simulation/            Monte Carlo study: data generation (dgp.py), simulations, communication benchmark, tables and figures
+├─ charls/                CHARLS application: data construction, analyses, value of collaboration, multiple testing, tables and figures
+├─ paper/                 scripts for the paper's tables and figures (main IK analyses, extended designs, communication, small-cell rule, figures)
+├─ results/               aggregate results reported in the paper (CSV, figures); no individual records
+├─ figstyle.py            plotting style
+├─ reporting.py           table output (CSV / Markdown / LaTeX)
+├─ run_all.py             runs everything
 └─ requirements.txt
 ```
 
-`data/`（由 CHARLS 原始数据构建的分析文件）和 `output/` 由脚本生成，已在 `.gitignore` 中排除；`results/` 保存论文报告的汇总结果（不含任何个体记录），随仓库提供。
+`data/` (analysis files built from the CHARLS raw data) and `output/` are generated by the scripts and excluded in
+`.gitignore`; `results/` holds the aggregate results reported in the paper (no individual records) and is part of the
+repository. Region names in some result files (for example `results/charls_ik/regions.csv`) are the Chinese names
+produced by the extraction script; `REGION_EN` in `charls/make_charls_tables.py` maps them to the English names used in
+the paper.
 
-## 环境
+## Requirements
 
-Python 3.12（3.10 及以上应可运行），依赖见 `requirements.txt`：
+Python 3.12 (3.10 or later should work); dependencies are listed in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
-# 可选：与官方 rdrobust 逐项对照的测试需要
+# optional: needed for the test that compares with the official rdrobust package
 pip install rdrobust
 ```
 
-## 快速开始
+## Quick start
 
 ```bash
 python examples/quickstart.py
 ```
 
-在 10 个站点的模拟数据上分别跑精确 RD（真实效应 1）和模糊 RD（真实效应 2），比较联邦估计、集中式估计和各站点单独估计后的逆方差加权平均。输出示例：
+On simulated data with 10 sites, this runs a sharp RD (true effect 1) and a fuzzy RD (true effect 2) and compares the
+federated estimate, the centralized estimate and the inverse-variance-weighted average of per-site estimates. Example
+output:
 
 ```
 Sharp RD, 10 sites, true effect 1.0
@@ -80,66 +99,81 @@ Sharp RD, 10 sites, true effect 1.0
   communication: 10 rounds, at most 16.1 KB uploaded per site
 ```
 
-在自己的数据上使用：
+On your own data:
 
 ```python
 from fsrd import Site, fsrd, centralized
 
-# 每个站点一份数据：x 为已按断点中心化的驱动变量 (X - c)，y 为结局，d 为处理接受情况（模糊 RD 时提供），w 为协变量
+# one data set per site: x is the running variable centred at the cutoff (X - c), y the outcome,
+# d the treatment take-up (for fuzzy RD) and w the covariates
 sites = [Site(x_k, y_k, d=d_k, w=w_k) for (x_k, y_k, d_k, w_k) in site_data]
-res = fsrd(sites, bw='mserd', support=(lo, hi))   # support：驱动变量公开的取值范围
+res = fsrd(sites, bw='mserd', support=(lo, hi))   # support: public range of the running variable
 print(res['tau_bc'], res['ci_rb'], res['h'], res['comm'])
 ```
 
-## 测试
+## Tests
 
 ```bash
 python tests/run_tests.py
 ```
 
-测试覆盖：无噪声数据上精确还原真值；联邦与集中式逐位相同（精确/模糊 RD、有无协变量、各种方差选项、随机切分站点）；与 rdrobust 观测级转写及官方 `rdrobust` 2.1.1 一致（给定带宽时差 < 1e-10，mserd 带宽相对差 < 1e-8）；IK 带宽公式；密度检验；站点固定效应；通信量与站点样本量无关。
+The tests cover exact recovery of the truth on noiseless data; bit-for-bit equality of the federated and centralized
+estimates (sharp and fuzzy RD, with and without covariates, all variance options, random partitions into sites);
+agreement with an observation-level transcription of rdrobust and with the official `rdrobust` 2.1.1 (differences
+< 1e-10 at a given bandwidth, relative difference < 1e-8 for the mserd bandwidth); the IK bandwidth formula; the density
+test; site fixed effects; and communication that does not depend on the site sample size.
 
-`test_c_published_rdrobust_senate_example` 使用 rdrobust 自带的参议院示例数据（公开数据，已放在 `tests/fixtures/rdrobust_senate.csv`）；`test_c_rdrobust_python_package` 在安装了官方 `rdrobust` 包时运行，否则跳过。
+`test_c_published_rdrobust_senate_example` uses the Senate example data distributed with rdrobust (public data, stored
+in `tests/fixtures/rdrobust_senate.csv`); `test_c_rdrobust_python_package` runs when the official `rdrobust` package is
+installed and is skipped otherwise.
 
-## 仿真
+## Simulations
 
 ```bash
-python simulation/run_simulation.py --reps 500     # 6 类设计、36 个配置，20 核约 40 分钟
-python simulation/run_comm.py                      # 通信量与运行时间
-python simulation/make_sim_tables.py               # 表格与图
+python simulation/run_simulation.py --reps 500     # 6 designs, 36 configurations, about 40 minutes on 20 cores
+python simulation/run_comm.py                      # communication and run time
+python simulation/make_sim_tables.py               # tables and figures
 ```
 
-设计包括：基准线性设计、带协变量和方差异质性的设计、站点效应异质且样本量不等、Lee (2008) 曲率设计、二次曲率设计、站点构成在断点处跳跃。比较对象为集中式估计、各站点估计的逆方差加权平均和简单平均。
+The designs are a baseline linear design, a design with covariates and heteroskedasticity, heterogeneous site effects
+with unequal site sizes, the Lee (2008) curvature design, a quadratic curvature design, and site composition that jumps
+at the cutoff. The comparisons are the centralized estimate and the inverse-variance-weighted and simple averages of
+the site estimates.
 
-## CHARLS 实证案例与数据获取
+## CHARLS application and data access
 
-`charls/` 用中国健康与养老追踪调查（CHARLS）2015 和 2018 两期数据，以 60 岁为断点估计城乡居民养老金对农村慢性病老人健康的影响，按 7 个地理区域划分站点。
+`charls/` uses the 2015 and 2018 waves of the China Health and Retirement Longitudinal Study (CHARLS) to estimate, with
+age 60 as the cutoff, the effect of the urban and rural residents' pension on the health of rural older adults with
+chronic conditions, with seven geographic regions as sites.
 
-**本仓库不包含任何 CHARLS 数据。** CHARLS 数据需要在 [CHARLS 官网](https://charls.pku.edu.cn/) 注册并申请，按其数据使用协议不得再分发。获得数据后：
+**This repository contains no CHARLS data.** CHARLS data are available after registration and application on the
+[CHARLS website](https://charls.pku.edu.cn/), and its data use agreement does not permit redistribution. Once you have
+the data:
 
 ```bash
-python charls/extract.py --raw /path/to/CHARLS          # 2018 年（第 4 期）
-python charls/extract_2015.py --raw /path/to/CHARLS     # 2015 年（第 3 期）
-python charls/run_charls.py                             # 分析（--wave 2015 跑 2015 年）
+python charls/extract.py --raw /path/to/CHARLS          # 2018 (wave 4)
+python charls/extract_2015.py --raw /path/to/CHARLS     # 2015 (wave 3)
+python charls/run_charls.py                             # analyses (--wave 2015 for 2015)
 python charls/make_charls_tables.py
 ```
 
-`--raw` 指向包含 `2018 CHARLS Wave 4` 等子目录的原始 .dta 数据文件夹，所需变量见 `charls/extract.py` 和 `charls/extract_2015.py` 的说明。
+`--raw` points to the folder of original .dta files that contains subfolders such as `2018 CHARLS Wave 4`; the
+variables required are listed in the documentation of `charls/extract.py` and `charls/extract_2015.py`.
 
-一键运行全部步骤：
+To run all steps:
 
 ```bash
-python run_all.py --skip-charls             # 没有 CHARLS 数据：测试 + 仿真 + 表图
-python run_all.py --raw /path/to/CHARLS     # 完整运行
-python run_all.py --quick --skip-charls     # 冒烟检查：每个仿真配置 40 次重复
+python run_all.py --skip-charls             # without CHARLS data: tests + simulations + tables and figures
+python run_all.py --raw /path/to/CHARLS     # full run
+python run_all.py --quick --skip-charls     # smoke check: 40 replications per simulation configuration
 ```
 
 ## Reproducing the paper
 
-This repository accompanies the paper *Federated Sharp Regression Discontinuity: Privacy-Preserving Causal Inference
-Across Data Islands* (N. Wang, Y. Liu, E. Hassini, H. Chen). The library in `fsrd/` implements the procedure; `simulation/`,
-`charls/` and `paper/` produce every reported number, and `results/` holds the aggregate outputs behind the tables and
-figures. No CHARLS individual record is included (see the data section above).
+This repository accompanies the paper *Federated Sharp Regression Discontinuity Across Data Islands* (N. Wang, Y. Liu,
+E. Hassini, H. Chen). The library in `fsrd/` implements the procedure; `simulation/`, `charls/` and `paper/` produce
+every reported number, and `results/` holds the aggregate outputs behind the tables and figures. No CHARLS individual
+record is included (see the data section above).
 
 ```bash
 pip install -r requirements.txt
@@ -159,27 +193,33 @@ python run_all.py --paper                 # then the IK analyses reported in the
 | Table 7 (design S3) | `paper/extensions_s3_curvature.py` | `results/extensions/s3_manuscript_table.csv` |
 | Table 8 (design S6) | `paper/composition_coalitions.py` | `results/composition_coalitions/s6_manuscript_table.csv` |
 | Table 9 (CHARLS 2018) | `paper/charls_ik_analysis.py` | `results/charls_ik/charls_main.csv`, `results/charls_ik/regions.csv` |
-| Figures 2–4 (partitions across sites) | `paper/charls_ik_analysis.py`, `paper/figures_vector.py` | `results/charls_ik/partitions.csv`, `results/figures_vector/` |
-| Figure 5 (coalitions of regions) | `paper/composition_coalitions.py`, `paper/figures_charls.py`, `paper/figures_vector.py` | `results/composition_coalitions/coalitions_ik.csv`, `coalition_fit.csv` |
+| Figure 2 (a) and (b) (heterogeneous site composition: covariates, treated-to-control ratios) | `paper/charls_ik_analysis.py`, `paper/figures_vector.py` | `results/charls_ik/partitions.csv`, `results/figures_vector/Figure_2.pdf` |
+| Figure 3 (estimates by number of participants) | `paper/charls_ik_analysis.py`, `paper/figures_vector.py` | `results/charls_ik/partitions.csv`, `results/figures_vector/Figure_3.pdf` |
+| Figure 4 (coalitions of regions) | `paper/composition_coalitions.py`, `paper/figures_charls.py`, `paper/figures_vector.py` | `results/composition_coalitions/coalitions_ik.csv`, `coalition_fit.csv`, `results/figures_vector/Figure_4.pdf` |
 | Supplementary Figure C.1 | `paper/extensions_s3_curvature.py` | `results/extensions/curvature_coverage.png` |
 | Supplementary Tables C.1–C.8 (CHARLS specifications and diagnostics, 2015 and 2018) | `charls/run_charls.py`, `charls/make_charls_tables.py`, `charls/compare_waves.py` | `results/charls/`, `results/charls_2015/` |
 | Supplementary Table C.9 (small-cell rule) | `paper/smallcell_rule.py` | `results/ik_benchmarks/smallcell_srh_2018.csv` |
 | Supplementary Figure C.2 | `paper/figures_charls.py` | `results/ik_benchmarks/fig_charls_rdplot_srh.png` |
 | Supplementary Figures C.3–C.4 | `paper/figures_bandwidth.py` | `results/figures_bandwidth/` |
 
-Simulation seeds are derived from 20261011 and the configuration identifiers; `REPLICATION_MANIFEST.json` lists the
-SHA-256 of every file in the repository.
+`results/figures_vector/` holds the PDF files of Figures 2–4 as submitted with the paper; `paper/figures_vector.py`
+redraws them from the stored CSV files. Simulation seeds are derived from 20261011 and the configuration identifiers;
+`REPLICATION_MANIFEST.json` lists the SHA-256 of every file in the repository.
 
-## 局限
+## Limitations
 
-- rdrobust 默认的最近邻方差（`vce='nn'`）需要跨站点找近邻，无法联邦计算，本库只提供 HC 和聚类方差。
-- 连续驱动变量的四分位距由 128 个公共分箱插值得到，初始带宽与 rdrobust 可能有极小差异。
-- 使用站点固定效应时，聚合后的统计量会暴露各站点窗口内的总和，安全聚合不再能隐藏站点级信息，只在站点构成于断点处跳跃时使用。
+- rdrobust's default nearest-neighbour variance (`vce='nn'`) needs neighbours across sites and cannot be computed in a
+  federated way; the library provides HC and cluster variances only.
+- For a continuous running variable the interquartile range is interpolated from 128 public bins, so the initial
+  bandwidth can differ very slightly from rdrobust.
+- With site fixed effects the aggregated statistics reveal each site's sums within the window, so secure aggregation no
+  longer hides site-level information; use them only when site composition jumps at the cutoff.
 
-## 作者
+## Author
 
-王楠（Nan Wang），大连理工大学。相关论文：Wang, N., Liu, Y., Hassini, E., Chen, H. *Federated Sharp Regression Discontinuity: Privacy-Preserving Causal Inference Across Data Islands*（工作论文，正式发表后补充引用信息）。
+Nan Wang, Dalian University of Technology. Related paper: Wang, N., Liu, Y., Hassini, E., Chen, H. *Federated Sharp
+Regression Discontinuity Across Data Islands* (working paper; citation details will be added on publication).
 
-## 许可证
+## License
 
 [MIT](LICENSE)
